@@ -12,15 +12,15 @@ Here is how to install apis-main individually.
 git, maven, groovy and JDK must be installed in advance.
 
 ```bash
-$ git clone https://github.com/SonyCSL/apis-bom.git
+$ git clone https://github.com/hyphae/apis-bom.git
 $ cd apis-bom
 $ mvn install
 $ cd ../
-$ git clone https://github.com/SonyCSL/apis-common.git
+$ git clone https://github.com/hyphae/apis-common.git
 $ cd apis-common
 $ mvn install
 $ cd ../
-$ git cone https://github.com/SonyCSL/apis-main.git
+$ git cone https://github.com/hypahe/apis-main.git
 $ cd apis-main
 $ mvn package
 ```
@@ -134,8 +134,8 @@ $ bash start4.sh
 <a id="anchor1"></a>
 ## Documentation
 
-&emsp;[apis-main_specificaton(EN)](https://github.com/SonyCSL/apis-main/blob/master/doc/en/apis-main_specification_en.md)  
-&emsp;[apis-main_specificaton(JP)](https://github.com/oes-github/apis-main/blob/master/doc/jp/apis-main_specification.md)
+&emsp;[apis-main_specificaton(EN)](https://github.com/hyphae/apis-main/blob/master/doc/en/apis-main_specification_en.md)  
+&emsp;[apis-main_specificaton(JP)](https://github.com/hyphae/apis-main/blob/master/doc/jp/apis-main_specification.md)
 
 
 ## API Specification  
@@ -152,8 +152,8 @@ $ mvn javadoc:javadoc
 The API specification is created in apis-main/target/site/apidocs/.  
 
 ## License
-&emsp;[Apache License Version 2.0](https://github.com/oes-github/apis-main/blob/master/LICENSE)
+&emsp;[Apache License Version 2.0](https://github.com/hyphae/apis-main/blob/master/LICENSE)
 
 
 ## Notice
-&emsp;[Notice](https://github.com/oes-github/apis-main/blob/master/NOTICE.md)
+&emsp;[Notice](https://github.com/hyphae/apis-main/blob/master/NOTICE.md)
