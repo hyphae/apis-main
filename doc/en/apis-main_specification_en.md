@@ -68,7 +68,7 @@
 - [**14. Privacy**](#14-privacy)
 - [**15. Open Source Software Licenses**](#15-open-source-software-licenses)
 - [**16. Operating Environment**](#16-operating-environment)
-  - [**16.2. Recommended Hardware Specifications**](#162-recommended-hardware-specifications)
+  - [**16.1. Recommended Hardware Specifications**](#162-recommended-hardware-specifications)
   - [**16.2. Recommended Operating System Specifications**](#162-recommended-operating-system-specifications)
 
 <br>
