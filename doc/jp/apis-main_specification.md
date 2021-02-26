@@ -1518,7 +1518,7 @@ Localネットワーク内のみで成立するSystem構成の場合はapis-main
 
 以下にapis-main用のコンピュータのOS要求を示す。
 
-<table><tbody><tr class="even"><td>種類</td><td><p>64bit OS, Linux 推奨</p><p>(Linux以外のOSの場合には採用前にapis-main動作確認を行う必要あり)</p></td></tr><tr class="odd"><td>サイズ</td><td><p>IoT Boardの内部ストレージ容量次第</p><p>(apis-main等のLog保存場所用に3GB以上は確保すること)</p></td></tr><tr class="even"><td>動作ソフトウェア</td><td>AdoptOpenJDK (32/64bit)</td></tr><tr class="odd"><td>OSSライセンス</td><td>GPL等のコピーレフト型ライセンスの影響を避けるため、それらのライセンスを持つソフトウェアとapis-mainが1つの実行ファイルとなるOSは禁止 (例:RTOS)</td></tr><tr class="even"><td rowspan="3">その他</td><td>OS起動時にapis-main等の自動実行が行えること</td></tr><tr class="odd"><td>ssh login/scpファイル転送が行えること</td></tr><tr class="even"><td>logrotage等でログを定期的にリネーム/圧縮/削除が行えること</td></tr></tbody></table>
+<table><tbody><tr class="even"><td>種類</td><td><p>64bit OS, Linux 推奨</p><p>(Linux以外のOSの場合には採用前にapis-main動作確認を行う必要あり)</p></td></tr><tr class="odd"><td>サイズ</td><td><p>IoT Boardの内部ストレージ容量次第</p><p>(apis-main等のLog保存場所用に3GB以上は確保すること)</p></td></tr><tr class="even"><td>動作ソフトウェア</td><td>AdoptOpenJDK (32/64bit)</td></tr><tr class="even"><td rowspan="3">その他</td><td>OS起動時にapis-main等の自動実行が行えること</td></tr><tr class="odd"><td>ssh login/scpファイル転送が行えること</td></tr><tr class="even"><td>logrotage等でログを定期的にリネーム/圧縮/削除が行えること</td></tr></tbody></table>
 
   [**1.** **用語・略語** 6]: #用語略語
   [**2.** **概要** 7]: #_Toc52292578
