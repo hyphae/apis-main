@@ -2350,7 +2350,7 @@ The following table shows the software used by apis-main and information about t
 
 # **16. Operating Environment**
     
-## **16.2. Recommended Hardware Specifications**
+## **16.1. Recommended Hardware Specifications**
 
 The recommended hardware specifications for apis-main are as follows.
 
@@ -2398,10 +2398,6 @@ The recommended operating system specifications for apis-main are as follows.
 <tr class="even">
 <td>Operating software</td>
 <td>AdoptOpenJDK (32/64-bit)</td>
-</tr>
-<tr class="odd">
-<td>Open source software license</td>
-<td>To prevent the effects of copyleft licenses such as GPL, an operating system that has the open source software and apis-main in one execution file is prohibited (e.g. a real-time operating system).</td>
 </tr>
 <tr class="even">
 <td rowspan="3">Others</td>
