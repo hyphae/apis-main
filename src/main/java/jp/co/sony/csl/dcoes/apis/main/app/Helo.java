@@ -22,7 +22,7 @@ import jp.co.sony.csl.dcoes.apis.main.util.ErrorUtil;
  * @author OES Project
  */
 public class Helo extends AbstractVerticle {
-	private static final Logger log = LoggerFactory.getLogger(Helo.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(Helo.class);
 
 	/**
 	 * Default duration [ms] of the interval between periodic checks for other units with the same ID in the cluster.
@@ -61,7 +61,7 @@ public class Helo extends AbstractVerticle {
 				startHeloService_(resHelo -> {
 					if (resHelo.succeeded()) {
 						heloTimerHandler_(0L);
-						if (log.isTraceEnabled()) log.trace("started : " + deploymentID());
+						if (LOGGER.isTraceEnabled()) LOGGER.trace("started : " + deploymentID());
 						startFuture.complete();
 					} else {
 						startFuture.fail(resHelo.cause());
@@ -86,7 +86,7 @@ public class Helo extends AbstractVerticle {
 	 */
 	@Override public void stop() throws Exception {
 		stopped_ = true;
-		if (log.isTraceEnabled()) log.trace("stopped : " + deploymentID());
+		if (LOGGER.isTraceEnabled()) LOGGER.trace("stopped : " + deploymentID());
 	}
 
 	////
@@ -118,7 +118,7 @@ public class Helo extends AbstractVerticle {
 	 * Function: A mechanism to prevent duplicate units with the same ID from existing in a cluster.
 	 *           If the message body is empty, return the unit ID of this unit.
 	 *           If there is a message body and it matches this unit's {@link #deploymentID()}, pass through this value (because it corresponds to this unit).
-	 *           Raise a FATAL error if there is a message body but it does not match this unit's {@link deploymentID()} (because this means there is another unit with the same ID).
+	 *           Raise a FATAL error if there is a message body but it does not match this unit's {@link #deploymentID()} (because this means there is another unit with the same ID).
 	 * Message body: {@link #deploymentID()} [{@link String}] of source {@link Helo} Verticle
 	 * Message header: none
 	 * Response: If the message body is empty, the ID of this unit [{@link String}].
@@ -193,7 +193,7 @@ public class Helo extends AbstractVerticle {
 	 */
 	private void heloTimerHandler_(Long timerId) {
 		if (stopped_) return;
-		if (null == timerId || timerId.longValue() != heloTimerId_) {
+		if (null == timerId || timerId != heloTimerId_) {
 			ErrorUtil.report(vertx, Error.Category.LOGIC, Error.Extent.LOCAL, Error.Level.WARN, "illegal timerId : " + timerId + ", heloTimerId_ : " + heloTimerId_);
 			return;
 		}
