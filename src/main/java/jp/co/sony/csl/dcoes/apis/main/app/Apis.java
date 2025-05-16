@@ -35,7 +35,7 @@ import jp.co.sony.csl.dcoes.apis.main.util.ApisConfig;
  * @author OES Project
  */
 public class Apis extends AbstractVerticle {
-	private static final Logger log = LoggerFactory.getLogger(Apis.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(Apis.class);
 
 	/**
 	 * Called at startup.
@@ -79,12 +79,9 @@ public class Apis extends AbstractVerticle {
 													if (resMediator.succeeded()) {
 														vertx.deployVerticle(new User(), resUser -> {
 															if (resUser.succeeded()) {
-																if (log.isInfoEnabled()) log.info("unitId       : " + ApisConfig.unitId());
-																if (log.isInfoEnabled()) log.info("unitName     : " + ApisConfig.unitName());
-																if (log.isInfoEnabled()) log.info("serialNumber : " + ApisConfig.serialNumber());
-																if (log.isInfoEnabled()) log.info("systemType   : " + ApisConfig.systemType());
+																logSystemInfo();
 																StateHandling.setStarted();
-																if (log.isTraceEnabled()) log.trace("started : " + deploymentID());
+																if (LOGGER.isTraceEnabled()) LOGGER.trace("started : " + deploymentID());
 																startFuture.complete();
 															} else {
 																startFuture.fail(resUser.cause());
@@ -117,6 +114,18 @@ public class Apis extends AbstractVerticle {
 	}
 
 	/**
+	 * Logs system configuration information
+	 */
+	private void logSystemInfo() {
+		if (LOGGER.isInfoEnabled()) {
+			LOGGER.info("unitId       : " + ApisConfig.unitId());
+			LOGGER.info("unitName     : " + ApisConfig.unitName());
+			LOGGER.info("serialNumber : " + ApisConfig.serialNumber());
+			LOGGER.info("systemType   : " + ApisConfig.systemType());
+		}
+	}
+
+	/**
 	 * Called when stopped.
 	 * Changes the operating state to "stopped".
 	 * @throws Exception {@inheritDoc}
@@ -127,7 +136,7 @@ public class Apis extends AbstractVerticle {
 	 */
 	@Override public void stop() throws Exception {
 		StateHandling.setStopping();
-		if (log.isTraceEnabled()) log.trace("stopped : " + deploymentID());
+		if (LOGGER.isTraceEnabled()) LOGGER.trace("stopped : " + deploymentID());
 	}
 
 }
