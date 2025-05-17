@@ -255,7 +255,7 @@ public class ScenarioKeeping extends AbstractVerticle {
 	 */
 	private void localFileReadingTimerHandler_(Long timerId) {
 		if (stopped_) return;
-		if (null == timerId || timerId.longValue() != localFileReadingTimerId_) {
+		if (null == timerId || timerId != localFileReadingTimerId_) {
 			ErrorUtil.report(vertx, Error.Category.LOGIC, Error.Extent.LOCAL, Error.Level.WARN, "illegal timerId : " + timerId + ", localFileReadingTimerId_ : " + localFileReadingTimerId_);
 			return;
 		}
@@ -317,7 +317,7 @@ public class ScenarioKeeping extends AbstractVerticle {
 	 */
 	private void controlCenterAccessingTimerHandler_(Long timerId) {
 		if (stopped_) return;
-		if (null == timerId || timerId.longValue() != controlCenterAccessingTimerId_) {
+		if (null == timerId || timerId != controlCenterAccessingTimerId_) {
 			ErrorUtil.report(vertx, Error.Category.LOGIC, Error.Extent.LOCAL, Error.Level.WARN, "illegal timerId : " + timerId + ", controlCenterAccessingTimerId_ : " + controlCenterAccessingTimerId_);
 			return;
 		}
