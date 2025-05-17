@@ -17,7 +17,6 @@ import jp.co.sony.csl.dcoes.apis.common.ServiceAddress;
 import jp.co.sony.csl.dcoes.apis.common.util.DateTimeUtil;
 import jp.co.sony.csl.dcoes.apis.common.util.vertx.JsonObjectWrapper;
 import jp.co.sony.csl.dcoes.apis.common.util.vertx.VertxConfig;
-import jp.co.sony.csl.dcoes.apis.main.app.HwConfigKeeping;
 import jp.co.sony.csl.dcoes.apis.main.util.ApisConfig;
 import jp.co.sony.csl.dcoes.apis.main.util.ErrorUtil;
 import jp.co.sony.csl.dcoes.apis.main.util.FileHandler;
