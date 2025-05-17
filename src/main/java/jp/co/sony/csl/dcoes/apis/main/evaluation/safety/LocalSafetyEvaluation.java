@@ -261,7 +261,7 @@ public class LocalSafetyEvaluation {
 		}
 		JsonObject range = HwConfigKeeping.safetyRange(valuePath);
 		if (range == null) {
-			ErrorUtil.report(vertx, Error.Category.USER, Error.Extent.LOCAL, Error.Level.ERROR, "no " + String.join(".", valuePath) + " safety range values in hwConfig : " + HwConfigKeeping.cache.jsonObject());
+			ErrorUtil.report(vertx, Error.Category.USER, Error.Extent.LOCAL, Error.Level.ERROR, "no " + String.join(".", valuePath) + " safety range values in hwConfig : " + HwConfigKeeping.CACHE.jsonObject());
 			return false;
 		}
 		Float min = JsonObjectUtil.getFloat(range, "min");
@@ -308,7 +308,7 @@ public class LocalSafetyEvaluation {
 		}
 		Float gridCurrentAllowanceA = HwConfigKeeping.gridCurrentAllowanceA();
 		if (gridCurrentAllowanceA == null) {
-			ErrorUtil.report(vertx, Error.Category.USER, Error.Extent.LOCAL, Error.Level.ERROR, "no gridCurrentAllowanceA value in hwConfig : " + HwConfigKeeping.cache.jsonObject());
+			ErrorUtil.report(vertx, Error.Category.USER, Error.Extent.LOCAL, Error.Level.ERROR, "no gridCurrentAllowanceA value in hwConfig : " + HwConfigKeeping.CACHE.jsonObject());
 			return false;
 		}
 		Float dig = JsonObjectUtil.getFloat(unitData, "dcdc", "param", "dig");
