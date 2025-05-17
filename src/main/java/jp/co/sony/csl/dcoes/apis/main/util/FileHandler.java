@@ -11,6 +11,7 @@ public final class FileHandler {
     private FileHandler() {
         // prevent instantiation
     }
+
     public static void readLocalFile(Handler<AsyncResult<JsonObject>> completionHandler, FileSystem fileSystem, String localFilePath) {
         fileSystem.readFile(localFilePath, resFile -> {
             if (resFile.succeeded()) {
