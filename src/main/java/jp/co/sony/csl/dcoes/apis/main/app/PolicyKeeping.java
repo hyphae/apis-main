@@ -25,74 +25,80 @@ import jp.co.sony.csl.dcoes.apis.main.util.ErrorUtil;
  * A Verticle that manages a POLICY.
  * Launched from the {@link jp.co.sony.csl.dcoes.apis.main.app.Apis} Verticle.
  * @author OES Project
- *          
+ *
  * POLICY を管理する Verticle.
  * {@link jp.co.sony.csl.dcoes.apis.main.app.Apis} Verticle から起動される.
  * @author OES Project
  */
 public class PolicyKeeping extends AbstractVerticle {
-	private static final Logger log = LoggerFactory.getLogger(PolicyKeeping.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(PolicyKeeping.class);
 
 	/**
 	 * Default timeout duration when reading POLICY from the file system [ms].
 	 * Value: {@value}.
-	 *          
+	 *
 	 * ファイルシステムから POLICY を読み込む際のタイムアウト時間のデフォルト値 [ms].
 	 * 値は {@value}.
 	 */
-	private static final Long LOCAL_FILE_DEFAULT_READ_TIMEOUT_MSEC = 60000L;
+	private static final long LOCAL_FILE_DEFAULT_READ_TIMEOUT_MSEC = 60000L;
+
 	/**
 	 * Default duration of the period with which POLICY is read from the file system [ms].
 	 * Value: {@value}.
-	 *          
+	 *
 	 * ファイルシステムから POLICY を読み込む周期のデフォルト値 [ms].
 	 * 値は {@value}.
 	 */
-	private static final Long LOCAL_FILE_DEFAULT_REFRESHING_PERIOD_MSEC = 5000L;
+	private static final long LOCAL_FILE_DEFAULT_REFRESHING_PERIOD_MSEC = 5000L;
+
 	/**
 	 * Default duration of the period with which POLICY is fetched from the service center [ms].
 	 * Value: {@value}.
-	 *          
+	 *
 	 * サービスセンタから POLICY を取得する周期のデフォルト値 [ms].
 	 * 値は {@value}.
 	 */
-	private static final Long CONTROL_CENTER_DEFAULT_REFRESHING_PERIOD_MSEC = 60000L;
+	private static final long CONTROL_CENTER_DEFAULT_REFRESHING_PERIOD_MSEC = 60000L;
 
 	/**
 	 * A cache that holds the file system POLICY.
-	 *          
+	 *
 	 * ファイルシステムの POLICY を保持しておくキャッシュ.
 	 */
-	private static final JsonObjectWrapper localFileCache_ = new JsonObjectWrapper();
+	private static final JsonObjectWrapper LOCAL_FILE_CACHE = new JsonObjectWrapper();
+
 	/**
 	 * A cache that holds the service center POLICY.
-	 *          
+	 *
 	 * サービスセンタの POLICY を保持しておくキャッシュ.
 	 */
-	private static final JsonObjectWrapper controlCenterCache_ = new JsonObjectWrapper();
+	private static final JsonObjectWrapper controlCenterCache = new JsonObjectWrapper();
+
+	private static final String MAP_NAME = PolicyKeeping.class.getName();
+	private static final String MAP_KEY_POLICY = "policy";
 
 	/**
 	 * Get a cache that holds a POLICY.
 	 * Priority is given to the service center cache, if available.
 	 * Otherwise, return the cache in the local file system.
 	 * @return a POLICY cache.
-	 *          
+	 *
 	 * POLICY を保持しておくキャッシュを取得する.
 	 * サービスセンタのキャッシュがあればそちらを優先する.
 	 * なければローカルファイルのキャッシュを返す.
 	 * @return POLICY のキャッシュ.
 	 */
 	public static JsonObjectWrapper cache() {
-		return (!controlCenterCache_.isNull()) ? controlCenterCache_ : localFileCache_;
+		return (!controlCenterCache.isNull()) ? controlCenterCache : LOCAL_FILE_CACHE;
 	}
 
-	private String localFilePath_;
-	private boolean controlCenterEnabled_ = false;
-	private String controlCenterAccount_;
-	private String controlCenterPassword_;
-	private long localFileReadingTimerId_ = 0L;
-	private long controlCenterAccessingTimerId_ = 0L;
-	private boolean stopped_ = false;
+	private String localFilePath;
+	private boolean controlCenterEnabled = false;
+	private String controlCenterAccount;
+	private String controlCenterPassword;
+	private long localFileReadingTimerId = 0L;
+	private long controlCenterAccessingTimerId = 0L;
+	private boolean stopped = false;
 
 	/**
 	 * Called at startup.
@@ -108,7 +114,7 @@ public class PolicyKeeping extends AbstractVerticle {
 	 * When using the service center function, start a timer to access it periodically.
 	 * @param startFuture {@inheritDoc}
 	 * @throws Exception {@inheritDoc}
-	 *          
+	 *
 	 * 起動時に呼び出される.
 	 * CONFIG から設定を取得し初期化する.
 	 * - CONFIG.policyFile : POLICY ファイルのパス
@@ -123,32 +129,34 @@ public class PolicyKeeping extends AbstractVerticle {
 	 * @param startFuture {@inheritDoc}
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void start(Future<Void> startFuture) throws Exception {
-		localFilePath_ = VertxConfig.config.getString("policyFile");
-		controlCenterEnabled_ = VertxConfig.config.getBoolean(Boolean.TRUE, "controlCenter", "enabled");
-		if (controlCenterEnabled_) {
-			controlCenterAccount_ = VertxConfig.config.getString("controlCenter", "account");
-			controlCenterPassword_ = VertxConfig.config.getString("controlCenter", "password");
+	@Override
+	public void start(Future<Void> startFuture) throws Exception {
+		localFilePath = VertxConfig.config.getString("policyFile");
+		controlCenterEnabled = VertxConfig.config.getBoolean(Boolean.TRUE, "controlCenter", "enabled");
+		if (controlCenterEnabled) {
+			controlCenterAccount = VertxConfig.config.getString("controlCenter", "account");
+			controlCenterPassword = VertxConfig.config.getString("controlCenter", "password");
 		}
-		if (log.isInfoEnabled()) log.info("policyFile : " + localFilePath_);
-		if (log.isInfoEnabled()) log.info("policyFile.defaultRefreshingPeriodMsec : " + LOCAL_FILE_DEFAULT_REFRESHING_PERIOD_MSEC);
-		if (log.isInfoEnabled()) log.info("controlCenter.enabled : " + controlCenterEnabled_);
-		if (log.isInfoEnabled()) log.info("controlCenter.account : " + controlCenterAccount_);
-		if (log.isInfoEnabled()) log.info("controlCenter.defaultRefreshingPeriodMsec : " + CONTROL_CENTER_DEFAULT_REFRESHING_PERIOD_MSEC);
+
+		LOGGER.info("policyFile : {}", localFilePath);
+		LOGGER.info("policyFile.defaultRefreshingPeriodMsec : {}", LOCAL_FILE_DEFAULT_REFRESHING_PERIOD_MSEC);
+		LOGGER.info("controlCenter.enabled : {}", controlCenterEnabled);
+		LOGGER.info("controlCenter.account : {}", controlCenterAccount);
+		LOGGER.info("controlCenter.defaultRefreshingPeriodMsec : {}", CONTROL_CENTER_DEFAULT_REFRESHING_PERIOD_MSEC);
 
 		// Initialization process (check that POLICY is readable)
 		// 初期化処理 ( POLICY が読み込めるかを確認する )
-		init_(resInit -> {
+		init(resInit -> {
 			if (resInit.succeeded()) {
-				startPolicyService_(resPolicy -> {
+				startPolicyService(resPolicy -> {
 					if (resPolicy.succeeded()) {
-						localFileReadingTimerHandler_(0L);
+						localFileReadingTimerHandler(0L);
 						// Set a timer if using the service center function
 						// サービスセンタの機能を使用するならタイマを仕込む
-						if (controlCenterEnabled_) {
-							controlCenterAccessingTimerHandler_(0L);
+						if (controlCenterEnabled) {
+							controlCenterAccessingTimerHandler(0L);
 						}
-						if (log.isTraceEnabled()) log.trace("started : " + deploymentID());
+						LOGGER.trace("started : {}", deploymentID());
 						startFuture.complete();
 					} else {
 						startFuture.fail(resPolicy.cause());
@@ -164,41 +172,41 @@ public class PolicyKeeping extends AbstractVerticle {
 	 * Called when stopped.
 	 * Sets a flag to stop the timer.
 	 * @throws Exception {@inheritDoc}
-	 *          
+	 *
 	 * 停止時に呼び出される.
 	 * タイマを止めるためのフラグを立てる.
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void stop() throws Exception {
-		stopped_ = true;
-		if (log.isTraceEnabled()) log.trace("stopped : " + deploymentID());
+	@Override
+	public void stop() throws Exception {
+		stopped = true;
+		LOGGER.trace("stopped : {}", deploymentID());
 	}
-
-	////
 
 	/**
 	 * Startup initialization process.
 	 * Read POLICY from the file system.
 	 * Bail out if reading fails or is not completed within a fixed period.
 	 * @param completionHandler the completion handler
-	 *          
+	 *
 	 * 起動時の初期化処理.
 	 * ファイルシステムから POLICY を読み込む.
 	 * 読み込みに失敗したり一定時間内に完了しなかったらアウト.
 	 * @param completionHandler the completion handler
 	 */
-	private void init_(Handler<AsyncResult<Void>> completionHandler) {
+	private void init(Handler<AsyncResult<Void>> completionHandler) {
 		Boolean[] handled = new Boolean[1];
-		Long localFileReadTimeoutMsec_ = VertxConfig.config.getLong(LOCAL_FILE_DEFAULT_READ_TIMEOUT_MSEC, "policyFileReadTimeoutMsec");
-		vertx.setTimer(localFileReadTimeoutMsec_, timerId -> {
+		Long localFileReadTimeoutMsec = VertxConfig.config.getLong(LOCAL_FILE_DEFAULT_READ_TIMEOUT_MSEC, "policyFileReadTimeoutMsec");
+		vertx.setTimer(localFileReadTimeoutMsec, timerId -> {
 			if (handled[0] == null) {
 				// A timeout occurred before the read process was completed
 				// 読み込み処理が完了する前にタイムアウトが起きた
 				handled[0] = Boolean.TRUE;
-				completionHandler.handle(Future.failedFuture("POLICY read timed out : " + localFileReadTimeoutMsec_ + "ms"));
+				completionHandler.handle(Future.failedFuture("POLICY read timed out : " + localFileReadTimeoutMsec + "ms"));
 			}
 		});
-		doReadLocalFile_(resRead -> {
+
+		readLocalFile(resRead -> {
 			if (handled[0] == null) {
 				// The read process was completed before a timeout occurred
 				// タイムアウトが起きる前に読み込み処理が完了した
@@ -206,28 +214,27 @@ public class PolicyKeeping extends AbstractVerticle {
 				if (resRead.succeeded()) {
 					// Keep in cache
 					// キャッシュしておく
-					localFileCache_.setJsonObject(resRead.result());
+					LOCAL_FILE_CACHE.setJsonObject(resRead.result());
 					// Guarantee that the contents of POLICY are the same throughout a cluster
 					// クラスタ内で POLICY の内容が同じことを保証する
-					checkClusterPolicy_(localFileCache_.jsonObject(), completionHandler);
+					checkClusterPolicy(LOCAL_FILE_CACHE.jsonObject(), completionHandler);
 				} else {
 					completionHandler.handle(Future.failedFuture(resRead.cause()));
 				}
 			}
 		});
 	}
-	private static final String MAP_NAME = PolicyKeeping.class.getName();
-	private static final String MAP_KEY_POLICY = "policy";
+
 	/**
 	 * Guarantee that the contents of POLICY are the same throughout a cluster.
 	 * @param policy a POLICY object
 	 * @param completionHandler the completion handler
-	 *          
+	 *
 	 * クラスタ内で POLICY の内容が同じことを保証する.
 	 * @param policy POLICY オブジェクト
 	 * @param completionHandler the completion handler
 	 */
-	private void checkClusterPolicy_(JsonObject policy, Handler<AsyncResult<Void>> completionHandler) {
+	private void checkClusterPolicy(JsonObject policy, Handler<AsyncResult<Void>> completionHandler) {
 		String myValue = policy.encode();
 		EncryptedClusterWideMapUtil.<String, String>getEncryptedClusterWideMap(vertx, MAP_NAME, resMap -> {
 			if (resMap.succeeded()) {
@@ -270,8 +277,6 @@ public class PolicyKeeping extends AbstractVerticle {
 		});
 	}
 
-	////
-
 	/**
 	 * Launch the {@link io.vertx.core.eventbus.EventBus} service.
 	 * Address: {@link ServiceAddress#policy()}
@@ -282,7 +287,7 @@ public class PolicyKeeping extends AbstractVerticle {
 	 * Message header: none
 	 * Response: POLICY information [{@link JsonObject}]
 	 * @param completionHandler the completion handler
-	 *          
+	 *
 	 * {@link io.vertx.core.eventbus.EventBus} サービス起動.
 	 * アドレス : {@link ServiceAddress#policy()}
 	 * 範囲 : ローカル
@@ -293,58 +298,61 @@ public class PolicyKeeping extends AbstractVerticle {
 	 * レスポンス : POLICY 情報 [{@link JsonObject}]
 	 * @param completionHandler the completion handler
 	 */
-	private void startPolicyService_(Handler<AsyncResult<Void>> completionHandler) {
+	private void startPolicyService(Handler<AsyncResult<Void>> completionHandler) {
 		vertx.eventBus().<Void>localConsumer(ServiceAddress.policy(), req -> {
 			JsonObject jsonObject = cache().jsonObject();
 			req.reply(jsonObject);
 		}).completionHandler(completionHandler);
 	}
 
-	////
-
 	/**
 	 * Set a timer to read POLICY from the file system.
 	 * The timeout duration is {@code POLICY.refreshingPeriodMsec} (default: {@link #LOCAL_FILE_DEFAULT_REFRESHING_PERIOD_MSEC}).
-	 *          
+	 *
 	 * ファイルシステムから POLICY を読み込むタイマ設定.
 	 * 待ち時間は {@code POLICY.refreshingPeriodMsec} ( デフォルト値 {@link #LOCAL_FILE_DEFAULT_REFRESHING_PERIOD_MSEC} ).
 	 */
-	private void setLocalFileReadingTimer_() {
-		Long delay = localFileCache_.getLong(LOCAL_FILE_DEFAULT_REFRESHING_PERIOD_MSEC, "refreshingPeriodMsec");
-		setLocalFileReadingTimer_(delay);
+	private void setLocalFileReadingTimer() {
+		Long delay = LOCAL_FILE_CACHE.getLong(LOCAL_FILE_DEFAULT_REFRESHING_PERIOD_MSEC, "refreshingPeriodMsec");
+		setLocalFileReadingTimer(delay);
 	}
+
 	/**
 	 * Set a timer to read POLICY from the file system.
 	 * @param delay cycle duration [ms]
-	 *          
+	 *
 	 * ファイルシステムから POLICY を読み込むタイマ設定.
 	 * @param delay 周期 [ms]
 	 */
-	private void setLocalFileReadingTimer_(long delay) {
-		localFileReadingTimerId_ = vertx.setTimer(delay, this::localFileReadingTimerHandler_);
+	private void setLocalFileReadingTimer(long delay) {
+		localFileReadingTimerId = vertx.setTimer(delay, this::localFileReadingTimerHandler);
 	}
+
 	/**
 	 * Process the timer to read POLICY from the file system.
 	 * @param timerId timer ID
-	 *          
+	 *
 	 * ファイルシステムから POLICY を読み込むタイマ処理.
 	 * @param timerId タイマ ID
 	 */
-	private void localFileReadingTimerHandler_(Long timerId) {
-		if (stopped_) return;
-		if (null == timerId || timerId.longValue() != localFileReadingTimerId_) {
-			ErrorUtil.report(vertx, Error.Category.LOGIC, Error.Extent.LOCAL, Error.Level.WARN, "illegal timerId : " + timerId + ", localFileReadingTimerId_ : " + localFileReadingTimerId_);
+	private void localFileReadingTimerHandler(Long timerId) {
+		if (stopped) return;
+
+		if (null == timerId || timerId != localFileReadingTimerId) {
+			ErrorUtil.report(vertx, Error.Category.LOGIC, Error.Extent.LOCAL, Error.Level.WARN,
+					"illegal timerId : " + timerId + ", localFileReadingTimerId : " + localFileReadingTimerId);
 			return;
 		}
-		doReadLocalFile_(resRead -> {
+
+		readLocalFile(resRead -> {
 			if (resRead.succeeded()) {
 				// Keep in cache
 				// キャッシュしておく
-				localFileCache_.setJsonObject(resRead.result());
+				LOCAL_FILE_CACHE.setJsonObject(resRead.result());
 			} else {
 				// If unable to read
 				// 読み込めなかったら
-				if (localFileCache_.isNull()) {
+				if (LOCAL_FILE_CACHE.isNull()) {
 					// Raise an error if the cache is empty (can't move)
 					// キャッシュが空なら ( 動けないので ) エラーにする
 					ErrorUtil.report(vertx, Error.Category.USER, Error.Extent.LOCAL, Error.Level.ERROR, resRead.cause());
@@ -354,12 +362,12 @@ public class PolicyKeeping extends AbstractVerticle {
 					ErrorUtil.report(vertx, Error.Category.USER, Error.Extent.LOCAL, Error.Level.WARN, resRead.cause());
 				}
 			}
-			setLocalFileReadingTimer_();
+			setLocalFileReadingTimer();
 		});
 	}
 
-	private void doReadLocalFile_(Handler<AsyncResult<JsonObject>> completionHandler) {
-		vertx.fileSystem().readFile(localFilePath_, resFile -> {
+	private void readLocalFile(Handler<AsyncResult<JsonObject>> completionHandler) {
+		vertx.fileSystem().readFile(localFilePath, resFile -> {
 			if (resFile.succeeded()) {
 				JsonObjectUtil.toJsonObject(resFile.result(), resToJsonObject -> {
 					if (resToJsonObject.succeeded()) {
@@ -375,61 +383,67 @@ public class PolicyKeeping extends AbstractVerticle {
 		});
 	}
 
-	////
-
 	/**
 	 * Set a timer for fetching POLICY from the service center.
 	 * The timeout duration is {@code POLICY.refreshingPeriodMsec} (default: {@link #CONTROL_CENTER_DEFAULT_REFRESHING_PERIOD_MSEC}).
-	 *          
+	 *
 	 * サービスセンタから POLICY を取得するタイマ設定.
 	 * 待ち時間は {@code POLICY.refreshingPeriodMsec} ( デフォルト値 {@link #CONTROL_CENTER_DEFAULT_REFRESHING_PERIOD_MSEC} ).
 	 */
-	private void setControlCenterAccessingTimer_() {
-		Long delay = controlCenterCache_.getLong(CONTROL_CENTER_DEFAULT_REFRESHING_PERIOD_MSEC, "refreshingPeriodMsec");
-		setControlCenterAccessingTimer_(delay);
+	private void setControlCenterAccessingTimer() {
+		Long delay = controlCenterCache.getLong(CONTROL_CENTER_DEFAULT_REFRESHING_PERIOD_MSEC, "refreshingPeriodMsec");
+		setControlCenterAccessingTimer(delay);
 	}
+
 	/**
 	 * Set a timer for fetching POLICY from the service center.
 	 * @param delay cycle duration [ms]
-	 *          
+	 *
 	 * サービスセンタから POLICY を取得するタイマ設定.
 	 * @param delay 周期 [ms]
 	 */
-	private void setControlCenterAccessingTimer_(long delay) {
-		controlCenterAccessingTimerId_ = vertx.setTimer(delay, this::controlCenterAccessingTimerHandler_);
+	private void setControlCenterAccessingTimer(long delay) {
+		controlCenterAccessingTimerId = vertx.setTimer(delay, this::controlCenterAccessingTimerHandler);
 	}
+
 	/**
 	 * Process the timer for fetching POLICY from the service center.
 	 * @param timerId timer ID
-	 *          
+	 *
 	 * サービスセンタから POLICY を取得するタイマ処理.
 	 * @param timerId タイマ ID
 	 */
-	private void controlCenterAccessingTimerHandler_(Long timerId) {
-		if (stopped_) return;
-		if (null == timerId || timerId.longValue() != controlCenterAccessingTimerId_) {
-			ErrorUtil.report(vertx, Error.Category.LOGIC, Error.Extent.LOCAL, Error.Level.WARN, "illegal timerId : " + timerId + ", controlCenterAccessingTimerId_ : " + controlCenterAccessingTimerId_);
+	private void controlCenterAccessingTimerHandler(Long timerId) {
+		if (stopped) return;
+
+		if (null == timerId || timerId != controlCenterAccessingTimerId) {
+			ErrorUtil.report(vertx, Error.Category.LOGIC, Error.Extent.LOCAL, Error.Level.WARN,
+					"illegal timerId : " + timerId + ", controlCenterAccessingTimerId : " + controlCenterAccessingTimerId);
 			return;
 		}
-		DeliveryOptions options = new DeliveryOptions().addHeader("account", controlCenterAccount_).addHeader("password", controlCenterPassword_).addHeader("unitId", ApisConfig.unitId());
+
+		DeliveryOptions options = new DeliveryOptions()
+				.addHeader("account", controlCenterAccount)
+				.addHeader("password", controlCenterPassword)
+				.addHeader("unitId", ApisConfig.unitId());
+
 		vertx.eventBus().<JsonObject>send(ServiceAddress.ControlCenterClient.policy(), null, options, resPolicy -> {
 			if (resPolicy.succeeded()) {
 				// Keep in cache
 				// キャッシュしておく
-				controlCenterCache_.setJsonObject(resPolicy.result().body());
+				controlCenterCache.setJsonObject(resPolicy.result().body());
 			} else {
-				ErrorUtil.report(vertx, Error.Category.USER, Error.Extent.LOCAL, Error.Level.WARN, "Communication failed on EventBus", resPolicy.cause());
+				ErrorUtil.report(vertx, Error.Category.USER, Error.Extent.LOCAL, Error.Level.WARN,
+						"Communication failed on EventBus", resPolicy.cause());
 			}
-			setControlCenterAccessingTimer_();
+			setControlCenterAccessingTimer();
 		});
 	}
-
-	////
 
 	/**
 	 * Fetch a list of IDs of the units participating in a cluster from the POLICY cache.
 	 * @return a list of IDs of the units participating in a cluster. May return {@code null}
-	 *          
+	 *
 	 * POLICY キャッシュからクラスタ参加ユニットの ID のリストを取得する.
 	 * @return クラスタ参加ユニットの ID のリスト. {@code null} の可能性あり
 	 */
@@ -440,7 +454,7 @@ public class PolicyKeeping extends AbstractVerticle {
 	/**
 	 * Get the number of units participating in a cluster defined in the POLICY cache.
 	 * @return the number of units participating in the cluster, or null if not defined
-	 *          
+	 *
 	 * POLICY キャッシュに定義されたクラスタ参加ユニットの数を取得する.
 	 * @return クラスタ参加ユニット数. 定義がなければ null
 	 */
@@ -453,7 +467,7 @@ public class PolicyKeeping extends AbstractVerticle {
 	 * Check that the ID specified by unitId is defined as a participating unit in the POLICY cache.
 	 * @param unitId ID of the unit to check
 	 * @return true if defined. Otherwise return false.
-	 *          
+	 *
 	 * unitId で指定された ID が POLICY キャッシュに参加ユニットとして定義されているか確認する.
 	 * @param unitId 確認するユニットの ID
 	 * @return 定義されていれば true. そうでなければ false
@@ -465,5 +479,4 @@ public class PolicyKeeping extends AbstractVerticle {
 		}
 		return false;
 	}
-
 }
