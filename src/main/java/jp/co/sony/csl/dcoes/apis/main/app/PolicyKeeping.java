@@ -15,11 +15,11 @@ import java.util.List;
 import jp.co.sony.csl.dcoes.apis.common.Error;
 import jp.co.sony.csl.dcoes.apis.common.ServiceAddress;
 import jp.co.sony.csl.dcoes.apis.common.util.vertx.EncryptedClusterWideMapUtil;
-import jp.co.sony.csl.dcoes.apis.common.util.vertx.JsonObjectUtil;
 import jp.co.sony.csl.dcoes.apis.common.util.vertx.JsonObjectWrapper;
 import jp.co.sony.csl.dcoes.apis.common.util.vertx.VertxConfig;
 import jp.co.sony.csl.dcoes.apis.main.util.ApisConfig;
 import jp.co.sony.csl.dcoes.apis.main.util.ErrorUtil;
+import jp.co.sony.csl.dcoes.apis.main.util.FileHandler;
 
 /**
  * A Verticle that manages a POLICY.
@@ -367,20 +367,7 @@ public class PolicyKeeping extends AbstractVerticle {
 	}
 
 	private void readLocalFile(Handler<AsyncResult<JsonObject>> completionHandler) {
-		vertx.fileSystem().readFile(localFilePath, resFile -> {
-			if (resFile.succeeded()) {
-				JsonObjectUtil.toJsonObject(resFile.result(), resToJsonObject -> {
-					if (resToJsonObject.succeeded()) {
-						JsonObject jsonObject = resToJsonObject.result();
-						completionHandler.handle(Future.succeededFuture(jsonObject));
-					} else {
-						completionHandler.handle(resToJsonObject);
-					}
-				});
-			} else {
-				completionHandler.handle(Future.failedFuture(resFile.cause()));
-			}
-		});
+		FileHandler.readLocalFile(completionHandler, vertx.fileSystem(), localFilePath);
 	}
 
 	/**

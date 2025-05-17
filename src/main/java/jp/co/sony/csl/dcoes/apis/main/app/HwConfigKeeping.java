@@ -12,6 +12,7 @@ import jp.co.sony.csl.dcoes.apis.common.util.vertx.JsonObjectUtil;
 import jp.co.sony.csl.dcoes.apis.common.util.vertx.JsonObjectWrapper;
 import jp.co.sony.csl.dcoes.apis.common.util.vertx.VertxConfig;
 import jp.co.sony.csl.dcoes.apis.main.util.ErrorUtil;
+import jp.co.sony.csl.dcoes.apis.main.util.FileHandler;
 
 /**
  * A Verticle that manages HWCONFIG.
@@ -148,20 +149,7 @@ public class HwConfigKeeping extends AbstractVerticle {
 	}
 
 	private void readLocalFile(Handler<AsyncResult<JsonObject>> completionHandler) {
-		vertx.fileSystem().readFile(localFilePath, resFile -> {
-			if (resFile.succeeded()) {
-				JsonObjectUtil.toJsonObject(resFile.result(), resToJsonObject -> {
-					if (resToJsonObject.succeeded()) {
-						JsonObject jsonObject = resToJsonObject.result();
-						completionHandler.handle(Future.succeededFuture(jsonObject));
-					} else {
-						completionHandler.handle(resToJsonObject);
-					}
-				});
-			} else {
-				completionHandler.handle(Future.failedFuture(resFile.cause()));
-			}
-		});
+		FileHandler.readLocalFile(completionHandler, vertx.fileSystem(), localFilePath);
 	}
 
 	/**

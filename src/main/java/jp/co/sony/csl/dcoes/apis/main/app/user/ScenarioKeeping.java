@@ -15,11 +15,12 @@ import java.time.LocalTime;
 import jp.co.sony.csl.dcoes.apis.common.Error;
 import jp.co.sony.csl.dcoes.apis.common.ServiceAddress;
 import jp.co.sony.csl.dcoes.apis.common.util.DateTimeUtil;
-import jp.co.sony.csl.dcoes.apis.common.util.vertx.JsonObjectUtil;
 import jp.co.sony.csl.dcoes.apis.common.util.vertx.JsonObjectWrapper;
 import jp.co.sony.csl.dcoes.apis.common.util.vertx.VertxConfig;
+import jp.co.sony.csl.dcoes.apis.main.app.HwConfigKeeping;
 import jp.co.sony.csl.dcoes.apis.main.util.ApisConfig;
 import jp.co.sony.csl.dcoes.apis.main.util.ErrorUtil;
+import jp.co.sony.csl.dcoes.apis.main.util.FileHandler;
 
 /**
  * A Verticle that manages a SCENARIO.
@@ -282,20 +283,7 @@ public class ScenarioKeeping extends AbstractVerticle {
 	}
 
 	private void doReadLocalFile_(Handler<AsyncResult<JsonObject>> completionHandler) {
-		vertx.fileSystem().readFile(localFilePath_, resFile -> {
-			if (resFile.succeeded()) {
-				JsonObjectUtil.toJsonObject(resFile.result(), resToJsonObject -> {
-					if (resToJsonObject.succeeded()) {
-						JsonObject jsonObject = resToJsonObject.result();
-						completionHandler.handle(Future.succeededFuture(jsonObject));
-					} else {
-						completionHandler.handle(resToJsonObject);
-					}
-				});
-			} else {
-				completionHandler.handle(Future.failedFuture(resFile.cause()));
-			}
-		});
+		FileHandler.readLocalFile(completionHandler, vertx.fileSystem(), localFilePath_);
 	}
 
 	////
