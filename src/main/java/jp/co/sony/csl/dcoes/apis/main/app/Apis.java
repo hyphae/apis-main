@@ -21,7 +21,7 @@ import jp.co.sony.csl.dcoes.apis.main.util.ApisConfig;
  * - {@link Mediator}: Mediator service object Verticle
  * - {@link User}: User service object Verticle
  * @author OES Project
- *          
+ *
  * APIS システムの親玉 Verticle.
  * {@link jp.co.sony.csl.dcoes.apis.main.util.Starter} Verticle から起動される.
  * 以下の Verticle を起動する.
@@ -50,7 +50,7 @@ public class Apis extends AbstractVerticle {
 	 * Changes the operating state to "running".
 	 * @param startFuture {@inheritDoc}
 	 * @throws Exception {@inheritDoc}
-	 *          
+	 *
 	 * 起動時に呼び出される.
 	 * 以下の Verticle を起動する.
 	 * - {@link Helo} : クラスタ内に同一 ID のユニットが存在しないかチェックする Verticle
@@ -81,7 +81,7 @@ public class Apis extends AbstractVerticle {
 															if (resUser.succeeded()) {
 																logSystemInfo();
 																StateHandling.setStarted();
-																if (LOGGER.isTraceEnabled()) LOGGER.trace("started : " + deploymentID());
+																LOGGER.trace("started : {}", deploymentID());
 																startFuture.complete();
 															} else {
 																startFuture.fail(resUser.cause());
@@ -117,26 +117,24 @@ public class Apis extends AbstractVerticle {
 	 * Logs system configuration information
 	 */
 	private void logSystemInfo() {
-		if (LOGGER.isInfoEnabled()) {
-			LOGGER.info("unitId       : " + ApisConfig.unitId());
-			LOGGER.info("unitName     : " + ApisConfig.unitName());
-			LOGGER.info("serialNumber : " + ApisConfig.serialNumber());
-			LOGGER.info("systemType   : " + ApisConfig.systemType());
-		}
+		LOGGER.info("unitId       : {}", ApisConfig.unitId());
+		LOGGER.info("unitName     : {}", ApisConfig.unitName());
+		LOGGER.info("serialNumber : {}", ApisConfig.serialNumber());
+		LOGGER.info("systemType   : {}", ApisConfig.systemType());
 	}
 
 	/**
 	 * Called when stopped.
 	 * Changes the operating state to "stopped".
 	 * @throws Exception {@inheritDoc}
-	 *          
+	 *
 	 * 停止時に呼び出される.
 	 * 動作状態を停止中に変更する.
 	 * @throws Exception {@inheritDoc}
 	 */
 	@Override public void stop() throws Exception {
 		StateHandling.setStopping();
-		if (LOGGER.isTraceEnabled()) LOGGER.trace("stopped : " + deploymentID());
+		LOGGER.trace("stopped : {}", deploymentID());
 	}
 
 }
