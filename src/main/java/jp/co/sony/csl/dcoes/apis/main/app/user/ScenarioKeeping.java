@@ -15,11 +15,11 @@ import java.time.LocalTime;
 import jp.co.sony.csl.dcoes.apis.common.Error;
 import jp.co.sony.csl.dcoes.apis.common.ServiceAddress;
 import jp.co.sony.csl.dcoes.apis.common.util.DateTimeUtil;
-import jp.co.sony.csl.dcoes.apis.common.util.vertx.JsonObjectUtil;
 import jp.co.sony.csl.dcoes.apis.common.util.vertx.JsonObjectWrapper;
 import jp.co.sony.csl.dcoes.apis.common.util.vertx.VertxConfig;
 import jp.co.sony.csl.dcoes.apis.main.util.ApisConfig;
 import jp.co.sony.csl.dcoes.apis.main.util.ErrorUtil;
+import jp.co.sony.csl.dcoes.apis.main.util.FileHandler;
 
 /**
  * A Verticle that manages a SCENARIO.
@@ -255,7 +255,7 @@ public class ScenarioKeeping extends AbstractVerticle {
 	 */
 	private void localFileReadingTimerHandler_(Long timerId) {
 		if (stopped_) return;
-		if (null == timerId || timerId.longValue() != localFileReadingTimerId_) {
+		if (null == timerId || timerId != localFileReadingTimerId_) {
 			ErrorUtil.report(vertx, Error.Category.LOGIC, Error.Extent.LOCAL, Error.Level.WARN, "illegal timerId : " + timerId + ", localFileReadingTimerId_ : " + localFileReadingTimerId_);
 			return;
 		}
@@ -282,20 +282,7 @@ public class ScenarioKeeping extends AbstractVerticle {
 	}
 
 	private void doReadLocalFile_(Handler<AsyncResult<JsonObject>> completionHandler) {
-		vertx.fileSystem().readFile(localFilePath_, resFile -> {
-			if (resFile.succeeded()) {
-				JsonObjectUtil.toJsonObject(resFile.result(), resToJsonObject -> {
-					if (resToJsonObject.succeeded()) {
-						JsonObject jsonObject = resToJsonObject.result();
-						completionHandler.handle(Future.succeededFuture(jsonObject));
-					} else {
-						completionHandler.handle(resToJsonObject);
-					}
-				});
-			} else {
-				completionHandler.handle(Future.failedFuture(resFile.cause()));
-			}
-		});
+		FileHandler.readLocalFile(completionHandler, vertx.fileSystem(), localFilePath_);
 	}
 
 	////
@@ -330,7 +317,7 @@ public class ScenarioKeeping extends AbstractVerticle {
 	 */
 	private void controlCenterAccessingTimerHandler_(Long timerId) {
 		if (stopped_) return;
-		if (null == timerId || timerId.longValue() != controlCenterAccessingTimerId_) {
+		if (null == timerId || timerId != controlCenterAccessingTimerId_) {
 			ErrorUtil.report(vertx, Error.Category.LOGIC, Error.Extent.LOCAL, Error.Level.WARN, "illegal timerId : " + timerId + ", controlCenterAccessingTimerId_ : " + controlCenterAccessingTimerId_);
 			return;
 		}
