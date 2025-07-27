@@ -738,7 +738,19 @@ public abstract class DataAcquisition extends AbstractVerticle {
 		 * @param client httpclient オブジェクト
 		 * @param uri アクセス URI
 		 * @param completionHandler the completion handler
+		 * 
+		 * NOTE: The method {@code HttpClient.get(String, Handler<HttpClientResponse>)} used below is deprecated
+		 * in newer versions of Vert.x. However, this project currently targets Vert.x 3.5.3, where this method is 
+		 * the supported and appropriate way to make simple HTTP GET requests.
+		 *
+		 * It is acceptable to continue using this method for now because:
+		 * - The alternative (WebClient) was only introduced in Vert.x 3.5.4+
+		 * - Upgrading Vert.x is not feasible at this time due to compatibility constraints
+		 *
+		 * Refactoring should be planned once the project is upgraded to a newer Vert.x version (3.6+ or 4.x)
+		 * where modern APIs are available.
 		 */
+		@SuppressWarnings("deprecation")
 		private void send_(HttpClient client, String uri, Handler<AsyncResult<JsonObject>> completionHandler) {
 			if (log.isInfoEnabled()) log.info("uri : " + uri);
 			Long requestTimeoutMsec = PolicyKeeping.cache().getLong(DEFAULT_REQUEST_TIMEOUT_MSEC, "controller", "requestTimeoutMsec");

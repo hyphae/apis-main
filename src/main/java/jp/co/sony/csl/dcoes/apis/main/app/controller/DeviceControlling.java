@@ -528,6 +528,20 @@ public abstract class DeviceControlling extends AbstractVerticle {
 		 * @param uri アクセス URI
 		 * @param completionHandler the completion handler
 		 */
+		/**
+		 * NOTE: The method {@code HttpClient.get(String, Handler<HttpClientResponse>)}
+		 * used below is deprecated
+		 * in newer versions of Vert.x. However, due to compatibility requirements with
+		 * Vert.x 3.5.3,
+		 * which does not support the WebClient API or newer alternatives, we are
+		 * retaining this usage.
+		 *
+		 * The usage is suppressed with {@code @SuppressWarnings("deprecation")} and may
+		 * be refactored
+		 * once the project upgrades to a newer Vert.x version (3.6+ or 4.x) where
+		 * WebClient is available.
+		 */
+		@SuppressWarnings("deprecation")
 		private void send_(HttpClient client, String uri, Handler<AsyncResult<JsonObject>> completionHandler) {
 			if (log.isInfoEnabled()) log.info("uri : " + uri);
 			Long requestTimeoutMsec = PolicyKeeping.cache().getLong(DEFAULT_REQUEST_TIMEOUT_MSEC, "controller", "requestTimeoutMsec");
