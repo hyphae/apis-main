@@ -1,0 +1,42 @@
+name: "CodeQL"
+
+permissions:
+  contents: read
+  actions: read
+  security-events: write
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  schedule:
+    # Run weekly analysis on Monday at 3:00 UTC
+    - cron: '0 3 * * 1'
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'java' ] 
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # Initializes the CodeQL toolchain and creates the CodeQL database.
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v3
+      with:
+        languages: ${{ matrix.language }}
+
+    # If the project uses a custom build process, replace this step
+    - name: Autobuild
+      uses: github/codeql-action/autobuild@v3
+
+    # Performs the analysis and uploads the results to GitHub Security
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
