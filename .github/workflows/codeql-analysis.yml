@@ -7,36 +7,33 @@ permissions:
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "master" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "master" ]
   schedule:
-    # Run weekly analysis on Monday at 3:00 UTC
     - cron: '0 3 * * 1'
 
 jobs:
   analyze:
     name: Analyze
     runs-on: ubuntu-latest
-    
+
     strategy:
       fail-fast: false
       matrix:
-        language: [ 'java' ] 
+        language: [ 'java' ]
+
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.2.2
 
-    # Initializes the CodeQL toolchain and creates the CodeQL database.
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v3
+      uses: github/codeql-action/init@1e6e912f1c746d2f3d179dc946cf5b13edcc3cda # v3.25.5
       with:
         languages: ${{ matrix.language }}
 
-    # If the project uses a custom build process, replace this step
     - name: Autobuild
-      uses: github/codeql-action/autobuild@v3
+      uses: github/codeql-action/autobuild@1e6e912f1c746d2f3d179dc946cf5b13edcc3cda # v3.25.5
 
-    # Performs the analysis and uploads the results to GitHub Security
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v3
+      uses: github/codeql-action/analyze@1e6e912f1c746d2f3d179dc946cf5b13edcc3cda # v3.25.5
