@@ -27,10 +27,12 @@
     <dependency>
       <groupId>jp.co.sony.csl.dcoes.apis</groupId>
       <artifactId>apis-common</artifactId>
+      <version>3.0.0</version>
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
       <artifactId>vertx-core</artifactId>
+      <version>3.7.1</version>
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
@@ -141,6 +143,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
+        <version>3.6.3</version>
         <configuration>
           <author>true</author>
           <source>1.8</source>
