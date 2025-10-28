@@ -1,5 +1,9 @@
 name: CI Build and Test
 
+permissions:
+  contents: read
+  actions: read
+
 on:
   push:
     branches: [ "master" ]
@@ -12,10 +16,10 @@ jobs:
     
     steps:
     - name: Checkout Code
-      uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
 
     - name: Set up JDK 17
-      uses: actions/setup-java@8df1039502a15bceb9433410b1a100fbe190c53b
+      uses: actions/setup-java@de5a937a1dc73fbc1a67d7d1aa4bebc1082f3190
       with:
         java-version: '17'
         distribution: 'temurin'
