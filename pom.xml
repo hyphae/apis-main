@@ -106,6 +106,7 @@
       </plugin>
       <plugin>
         <artifactId>maven-antrun-plugin</artifactId>
+        <version>3.3.0</version>
         <executions>
           <execution>
             <phase>package</phase>
@@ -123,6 +124,7 @@
       </plugin>
       <plugin>
         <artifactId>maven-assembly-plugin</artifactId>
+        <version>3.6.0</version>
         <executions>
           <execution>
             <phase>package</phase>
