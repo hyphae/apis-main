@@ -1,0 +1,13 @@
+version: 2
+updates:
+  - package-ecosystem: "maven"
+    directory: "/"
+    schedule:
+      interval: "weekly" # Check for updates weekly
+    open-pull-requests-limit: 10 # Limit the number of open PRs to avoid noise
+    target-branch: "master"
+    rebase-strategy: "auto"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+
