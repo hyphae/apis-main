@@ -24,6 +24,9 @@ jobs:
           distribution: "temurin"
           cache: "maven"
 
+      - name: Install Groovy
+        run: sudo apt-get update && sudo apt-get install -y groovy
+
       - name: 1. Clone and Install apis-bom
         run: |
           git clone https://github.com/hyphae/apis-bom.git ../apis-bom
