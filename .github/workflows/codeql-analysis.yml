@@ -7,11 +7,11 @@ permissions:
 
 on:
   push:
-    branches: [ "master" ]
+    branches: ["master"]
   pull_request:
-    branches: [ "master" ]
+    branches: ["master"]
   schedule:
-    - cron: '0 3 * * 1'
+    - cron: "0 3 * * 1"
 
 jobs:
   analyze:
@@ -21,19 +21,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [ 'java' ]
+        language: ["java"]
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
+      - name: Checkout repository
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
 
-    - name: Initialize CodeQL
-      uses: github/codeql-action/init@7434149006143a4d75b82a2f411ef15b03ccc2d7
-      with:
-        languages: ${{ matrix.language }}
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@17783bfb99b07f70fae080b654aed0c514057477
+        with:
+          languages: ${{ matrix.language }}
 
-    - name: Autobuild
-      uses: github/codeql-action/autobuild@7434149006143a4d75b82a2f411ef15b03ccc2d7
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@17783bfb99b07f70fae080b654aed0c514057477
 
-    - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@f0452d53667194f9f75d659eb44b683248333ef9
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@17783bfb99b07f70fae080b654aed0c514057477

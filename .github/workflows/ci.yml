@@ -6,24 +6,33 @@ permissions:
 
 on:
   push:
-    branches: [ "master" ]
+    branches: ["master"]
   pull_request:
-    branches: [ "master" ]
+    branches: ["master"]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
+      - name: Checkout Code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
 
-    - name: Set up JDK 17
-      uses: actions/setup-java@de5a937a1dc73fbc1a67d7d1aa4bebc1082f3190
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-        cache: 'maven'
+      - name: Set up JDK 17 and Maven Cache
+        uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165
+        with:
+          java-version: "17"
+          distribution: "temurin"
+          cache: "maven"
 
-    - name: Build and Run Tests
-      run: mvn -B clean verify
+      - name: 1. Clone and Install apis-bom
+        run: |
+          git clone https://github.com/hyphae/apis-bom.git ../apis-bom
+          mvn -B -f ../apis-bom/pom.xml clean install
+
+      - name: 2. Clone and Install apis-common
+        run: |
+          git clone https://github.com/hyphae/apis-common.git ../apis-common
+          mvn -B -f ../apis-common/pom.xml clean install
+
+      - name: 3. Build and Test apis-main
+        run: mvn -B clean verify
