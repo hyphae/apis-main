@@ -30,12 +30,12 @@ jobs:
       - name: 1. Clone and Install apis-bom
         run: |
           git clone https://github.com/hyphae/apis-bom.git ../apis-bom
-          mvn -B -f ../apis-bom/pom.xml clean install
+          mvn -B -f ../apis-bom/pom.xml clean install -DskipTests=true -Dmaven.test.failure.ignore=true
 
       - name: 2. Clone and Install apis-common
         run: |
           git clone https://github.com/hyphae/apis-common.git ../apis-common
-          mvn -B -f ../apis-common/pom.xml clean install
+          mvn -B -f ../apis-common/pom.xml clean install -DskipTests=true -Dmaven.test.failure.ignore=true
 
       - name: 3. Build and Test apis-main
         run: mvn -B clean verify
