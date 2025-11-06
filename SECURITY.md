@@ -12,4 +12,3 @@ The email should include:
 * A clear description of the vulnerability.
 * Steps to reproduce the vulnerability.
 * The affected version(s) of the project.
-

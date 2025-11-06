@@ -1,0 +1,60 @@
+name: "CodeQL"
+
+permissions:
+  contents: read
+  actions: read
+  security-events: write
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+  schedule:
+    - cron: "0 3 * * 1"
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ["java"]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+
+      - name: Set up JDK 17 and Maven Cache
+        uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165
+        with:
+          java-version: "17"
+          distribution: "temurin"
+          cache: "maven"
+
+      - name: Install Groovy
+        run: sudo apt-get update && sudo apt-get install -y groovy
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@17783bfb99b07f70fae080b654aed0c514057477
+        with:
+          languages: ${{ matrix.language }}
+
+      - name: 1. Clone and Install apis-bom
+        run: |
+          git clone https://github.com/hyphae/apis-bom.git ../apis-bom
+          mvn -B -f ../apis-bom/pom.xml clean install -DskipTests=true -Dmaven.test.failure.ignore=true
+
+      - name: 2. Clone and Install apis-common
+        run: |
+          git clone https://github.com/hyphae/apis-common.git ../apis-common
+          mvn -B -f ../apis-common/pom.xml clean install -DskipTests=true -Dmaven.test.failure.ignore=true
+
+      - name: Build apis-main
+        run: mvn -B clean package -DskipTests
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@17783bfb99b07f70fae080b654aed0c514057477
+        continue-on-error: true
