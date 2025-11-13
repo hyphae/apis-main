@@ -586,7 +586,7 @@ public abstract class DataAcquisition extends AbstractVerticle {
 				ErrorUtil.report(vertx, Error.Category.HARDWARE, Error.Extent.LOCAL, Error.Level.WARN, "no battery.rsoc value in unit data : " + cache.jsonObject());
 			}
 		} else {
-			ErrorUtil.report(vertx, Error.Category.USER, Error.Extent.LOCAL, Error.Level.WARN, "no batteryNominalCapacityWh value in hwConfig : " + HwConfigKeeping.cache.jsonObject());
+			ErrorUtil.report(vertx, Error.Category.USER, Error.Extent.LOCAL, Error.Level.WARN, "no batteryNominalCapacityWh value in hwConfig : " + HwConfigKeeping.CACHE.jsonObject());
 		}
 		int dealInterlockCapacity = Interlocking.dealInterlockCapacity(vertx);
 		result.put("deal_interlock_capacity", dealInterlockCapacity);
