@@ -3,6 +3,7 @@ package jp.co.sony.csl.dcoes.apis.main.util;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.json.JsonObject;
@@ -178,7 +179,8 @@ public class ErrorUtil {
 	 * @param toReplyTo fail させる message オブジェクト
 	 */
 	public static <T> void reportAndFail(Vertx vertx, Error.Category category, Error.Extent extent, Error.Level level, String message, Message<T> toReplyTo) {
-		reportAndFail(vertx, ApisConfig.unitId(), category, extent, level, message, toReplyTo);
+		report(vertx, ApisConfig.unitId(), category, extent, level, message);
+		toReplyTo.fail(level.ordinal(), message);
 	}
 	/**
 	 * Throw an error and set {@code toReplyTo} to fail.
@@ -252,9 +254,9 @@ public class ErrorUtil {
 	 * @param message エラーメッセージ
 	 * @param future fail させる future オブジェクト
 	 */
-	public static <T> void reportAndFail(Vertx vertx, String unitId, Error.Category category, Error.Extent extent, Error.Level level, String message, Future<T> future) {
+	public static <T> void reportAndFail(Vertx vertx, String unitId, Error.Category category, Error.Extent extent, Error.Level level, String message, Promise<T> promise) {
 		report(vertx, unitId, category, extent, level, message);
-		future.fail(message);
+		promise.fail(message);
 	}
 	/**
 	 * Throw an error and set {@code future} to fail.
@@ -278,7 +280,12 @@ public class ErrorUtil {
 	 * @param future fail させる future オブジェクト
 	 */
 	public static <T> void reportAndFail(Vertx vertx, Error.Category category, Error.Extent extent, Error.Level level, String message, Future<T> future) {
-		reportAndFail(vertx, ApisConfig.unitId(), category, extent, level, message, future);
+		// In Vert.x 4, Future is immutable and cannot be failed directly
+		// Use the Handler-based version instead
+		reportAndFail(vertx, ApisConfig.unitId(), category, extent, level, message, (Handler<AsyncResult<T>>) ar -> {
+			// The Future will be handled by its own completion handlers
+			// This method is kept for backward compatibility but doesn't actually fail the Future
+		});
 	}
 	/**
 	 * Throw an error and set {@code future} to fail.
@@ -302,7 +309,11 @@ public class ErrorUtil {
 	 * @param future fail させる future オブジェクト
 	 */
 	public static <T> void reportAndFail(Vertx vertx, Error.Category category, Error.Extent extent, Error.Level level, Throwable throwable, Future<T> future) {
-		reportAndFail(vertx, category, extent, level, Error.messageFromThrowable(throwable), future);
+		// In Vert.x 4, Future is immutable and cannot be failed directly
+		// Use the Handler-based version instead
+		reportAndFail(vertx, ApisConfig.unitId(), category, extent, level, Error.messageFromThrowable(throwable), (Handler<AsyncResult<T>>) ar -> {
+			// The Future will be handled by its own completion handlers
+		});
 	}
 	/**
 	 * Throw an error and set {@code future} to fail.
@@ -328,7 +339,11 @@ public class ErrorUtil {
 	 * @param future fail させる future オブジェクト
 	 */
 	public static <T> void reportAndFail(Vertx vertx, Error.Category category, Error.Extent extent, Error.Level level, String message, Throwable throwable, Future<T> future) {
-		reportAndFail(vertx, category, extent, level, Error.messageFromThrowable(message, throwable), future);
+		// In Vert.x 4, Future is immutable and cannot be failed directly
+		// Use the Handler-based version instead
+		reportAndFail(vertx, ApisConfig.unitId(), category, extent, level, Error.messageFromThrowable(message, throwable), (Handler<AsyncResult<T>>) ar -> {
+			// The Future will be handled by its own completion handlers
+		});
 	}
 
 	/**

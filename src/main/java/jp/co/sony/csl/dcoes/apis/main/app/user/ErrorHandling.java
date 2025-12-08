@@ -8,10 +8,11 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import jp.co.sony.csl.dcoes.apis.common.Error;
 import jp.co.sony.csl.dcoes.apis.main.app.PolicyKeeping;
 import jp.co.sony.csl.dcoes.apis.main.error.handling.AbstractErrorsHandling;
@@ -61,10 +62,10 @@ public class ErrorHandling extends AbstractVerticle {
 	 * @param startFuture {@inheritDoc}
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void start(Future<Void> startFuture) throws Exception {
+	@Override public void start(Promise<Void> startPromise) throws Exception {
 		errorHandlingTimerHandler_(0L);
 		if (log.isTraceEnabled()) log.trace("started : " + deploymentID());
-		startFuture.complete();
+		startPromise.complete();
 	}
 
 	/**
@@ -76,9 +77,10 @@ public class ErrorHandling extends AbstractVerticle {
 	 * タイマを止めるためのフラグを立てる.
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void stop() throws Exception {
+	@Override public void stop(Promise<Void> stopPromise) throws Exception {
 		stopped_ = true;
 		if (log.isTraceEnabled()) log.trace("stopped : " + deploymentID());
+		stopPromise.complete();
 	}
 
 	////
@@ -199,7 +201,7 @@ public class ErrorHandling extends AbstractVerticle {
 					case WARN:
 						// Warning level errors do nothing
 						// 警告レベルは何もしない
-						log.fatal("#### should never happen; category : " + category_ + ", level : " + aLevel);
+						log.error("#### should never happen; category : " + category_ + ", level : " + aLevel);
 						break;
 					case ERROR:
 						// Failure level errors are handled by creating a processing object according to the type of error
@@ -218,7 +220,7 @@ public class ErrorHandling extends AbstractVerticle {
 							handler = new LocalUserErrorsHandling(vertx, policy_, errors);
 							break;
 						case UNKNOWN:
-							log.fatal("#### should never happen; category : " + category_ + ", level : " + aLevel);
+						log.error("#### should never happen; category : " + category_ + ", level : " + aLevel);
 							break;
 						}
 						break;

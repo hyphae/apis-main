@@ -4,9 +4,10 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import jp.co.sony.csl.dcoes.apis.common.Error;
 import jp.co.sony.csl.dcoes.apis.common.ServiceAddress;
 import jp.co.sony.csl.dcoes.apis.common.util.vertx.ReplyFailureUtil;
@@ -40,14 +41,14 @@ public class ExternalRequestHandling extends AbstractVerticle {
 	 * @param startFuture {@inheritDoc}
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void start(Future<Void> startFuture) throws Exception {
+	@Override public void start(Promise<Void> startPromise) throws Exception {
 		startExternalRequestHandlingService_(resExternalRequestHandling -> {
 			if (resExternalRequestHandling.succeeded()) {
 				if (log.isTraceEnabled()) log.trace("started : " + deploymentID());
-				startFuture.complete();
+				startPromise.complete();
 			} else {
-				log.error(resExternalRequestHandling.cause());
-				startFuture.fail(resExternalRequestHandling.cause());
+				log.error("", resExternalRequestHandling.cause());
+				startPromise.fail(resExternalRequestHandling.cause());
 			}
 		});
 	}
@@ -59,8 +60,9 @@ public class ExternalRequestHandling extends AbstractVerticle {
 	 * 停止時に呼び出される.
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void stop() throws Exception {
+	@Override public void stop(Promise<Void> stopPromise) throws Exception {
 		if (log.isTraceEnabled()) log.trace("stopped : " + deploymentID());
+		stopPromise.complete();
 	}
 
 	////
@@ -102,7 +104,7 @@ public class ExternalRequestHandling extends AbstractVerticle {
 					if (requestUnitId != null) {
 						if (!ApisConfig.unitId().equals(requestUnitId)) {
 							if (PolicyKeeping.isMember(requestUnitId)) {
-								vertx.eventBus().<JsonObject>send(ServiceAddress.User.mediatorRequest(), request, rep -> {
+								vertx.eventBus().<JsonObject>request(ServiceAddress.User.mediatorRequest(), request, rep -> {
 									if (rep.succeeded()) {
 										JsonObject accept = rep.result().body();
 										if (accept != null) {

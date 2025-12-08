@@ -4,9 +4,10 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import jp.co.sony.csl.dcoes.apis.common.Error;
 import jp.co.sony.csl.dcoes.apis.common.ServiceAddress;
 import jp.co.sony.csl.dcoes.apis.common.util.vertx.LocalExclusiveLock;
@@ -105,10 +106,10 @@ public class MainLoop extends AbstractVerticle {
 	 * @param startFuture {@inheritDoc}
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void start(Future<Void> startFuture) throws Exception {
+	@Override public void start(Promise<Void> startPromise) throws Exception {
 		mainLoopTimerHandler_(0L);
 		if (log.isTraceEnabled()) log.trace("started : " + deploymentID());
-		startFuture.complete();
+		startPromise.complete();
 	}
 
 	/**
@@ -120,9 +121,10 @@ public class MainLoop extends AbstractVerticle {
 	 * タイマを止めるためのフラグを立てる.
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void stop() throws Exception {
+	@Override public void stop(Promise<Void> stopPromise) throws Exception {
 		stopped_ = true;
 		if (log.isTraceEnabled()) log.trace("stopped : " + deploymentID());
+		stopPromise.complete();
 	}
 
 	////

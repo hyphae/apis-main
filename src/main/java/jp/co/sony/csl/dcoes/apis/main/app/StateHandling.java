@@ -5,11 +5,12 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import io.vertx.core.shareddata.AsyncMap;
 
 import java.io.File;
@@ -71,7 +72,7 @@ public class StateHandling extends AbstractVerticle {
 	 * @throws Exception {@inheritDoc}
 	 */
 	@Override
-	public void start(Future<Void> startFuture) throws Exception {
+	public void start(Promise<Void> startPromise) throws Exception {
 		init(resInit -> {
 			if (resInit.succeeded()) {
 				startGlobalOperationModeService(resGlobalOperationMode -> {
@@ -79,17 +80,17 @@ public class StateHandling extends AbstractVerticle {
 						startLocalOperationModeService(resLocalOperationMode -> {
 							if (resLocalOperationMode.succeeded()) {
 								LOGGER.trace("started : {}", deploymentID());
-								startFuture.complete();
+								startPromise.complete();
 							} else {
-								startFuture.fail(resLocalOperationMode.cause());
+								startPromise.fail(resLocalOperationMode.cause());
 							}
 						});
 					} else {
-						startFuture.fail(resGlobalOperationMode.cause());
+						startPromise.fail(resGlobalOperationMode.cause());
 					}
 				});
 			} else {
-				startFuture.fail(resInit.cause());
+				startPromise.fail(resInit.cause());
 			}
 		});
 	}
@@ -102,8 +103,9 @@ public class StateHandling extends AbstractVerticle {
 	 * @throws Exception {@inheritDoc}
 	 */
 	@Override
-	public void stop() throws Exception {
+	public void stop(Promise<Void> stopPromise) throws Exception {
 		LOGGER.trace("stopped : {}", deploymentID());
+		stopPromise.complete();
 	}
 
 	/**
@@ -433,11 +435,25 @@ public class StateHandling extends AbstractVerticle {
 	 * @param completionHandler the completion handler
 	 */
 	public static void operationModes(Vertx vertx, Handler<AsyncResult<JsonObject>> completionHandler) {
-		Future<String> globalFuture = Future.future();
-		Future<String> localFuture = Future.future();
-		globalOperationMode(vertx, globalFuture);
-		localOperationMode(vertx, localFuture);
-		CompositeFuture.<String, String>all(globalFuture, localFuture).setHandler(ar -> {
+		Promise<String> globalPromise = Promise.promise();
+		Future<String> globalFuture = globalPromise.future();
+		Promise<String> localPromise = Promise.promise();
+		Future<String> localFuture = localPromise.future();
+		globalOperationMode(vertx, ar -> {
+			if (ar.succeeded()) {
+				globalPromise.complete(ar.result());
+			} else {
+				globalPromise.fail(ar.cause());
+			}
+		});
+		localOperationMode(vertx, ar -> {
+			if (ar.succeeded()) {
+				localPromise.complete(ar.result());
+			} else {
+				localPromise.fail(ar.cause());
+			}
+		});
+		CompositeFuture.<String, String>all(globalFuture, localFuture).onComplete(ar -> {
 			if (ar.succeeded()) {
 				String global = ar.result().resultAt(0);
 				String local = ar.result().resultAt(1);

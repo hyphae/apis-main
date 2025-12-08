@@ -5,8 +5,8 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import jp.co.sony.csl.dcoes.apis.common.Error;
 import jp.co.sony.csl.dcoes.apis.common.ServiceAddress;
 import jp.co.sony.csl.dcoes.apis.common.util.vertx.AbstractStarter;
@@ -36,9 +36,9 @@ public class Starter extends AbstractStarter {
 	private boolean shuttingDown_ = false;
 
 	/**
-	 * Called from {@link AbstractStarter#start(Future)} at startup.
+	 * Called from {@link AbstractStarter#start(Promise)} at startup.
 	 *          
-	 * 起動時に {@link AbstractStarter#start(Future)} から呼び出される.
+	 * 起動時に {@link AbstractStarter#start(Promise)} から呼び出される.
 	 */
 	@Override protected void doStart(Handler<AsyncResult<Void>> completionHandler) {
 		Factory.initialize(resInitGlobalFactory -> {
@@ -118,7 +118,7 @@ public class Starter extends AbstractStarter {
 	 */
 	private void startShutdownService_(Handler<AsyncResult<Void>> completionHandler) {
 		vertx.eventBus().<Void>consumer(ServiceAddress.shutdown(ApisConfig.unitId()), req -> {
-			vertx.eventBus().<String>send(ServiceAddress.shutdownLocal(), null, repShutdownLocal -> {
+			vertx.eventBus().<String>request(ServiceAddress.shutdownLocal(), null, repShutdownLocal -> {
 				if (repShutdownLocal.succeeded()) {
 					req.reply(repShutdownLocal.result().body());
 				} else {

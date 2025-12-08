@@ -5,11 +5,12 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import jp.co.sony.csl.dcoes.apis.common.Deal;
 import jp.co.sony.csl.dcoes.apis.common.Error;
 import jp.co.sony.csl.dcoes.apis.common.ServiceAddress;
@@ -47,7 +48,7 @@ public class Interlocking extends AbstractVerticle {
 	 * @param startFuture {@inheritDoc}
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void start(Future<Void> startFuture) throws Exception {
+	@Override public void start(Promise<Void> startPromise) throws Exception {
 		startGridMasterInterlockingService_(resGridMasterInterlocking -> {
 			if (resGridMasterInterlocking.succeeded()) {
 				startDealInterlockingService_(resDealInterlocking -> {
@@ -57,21 +58,21 @@ public class Interlocking extends AbstractVerticle {
 								startResetAllService_(resResetAll -> {
 									if (resResetAll.succeeded()) {
 										if (log.isTraceEnabled()) log.trace("started : " + deploymentID());
-										startFuture.complete();
+										startPromise.complete();
 									} else {
-										startFuture.fail(resResetAll.cause());
+										startPromise.fail(resResetAll.cause());
 									}
 								});
 							} else {
-								startFuture.fail(resResetLocal.cause());
+								startPromise.fail(resResetLocal.cause());
 							}
 						});
 					} else {
-						startFuture.fail(resDealInterlocking.cause());
+						startPromise.fail(resDealInterlocking.cause());
 					}
 				});
 			} else {
-				startFuture.fail(resGridMasterInterlocking.cause());
+				startPromise.fail(resGridMasterInterlocking.cause());
 			}
 		});
 	}
@@ -83,8 +84,9 @@ public class Interlocking extends AbstractVerticle {
 	 * 停止時に呼び出される.
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void stop() throws Exception {
+	@Override public void stop(Promise<Void> stopPromise) throws Exception {
 		if (log.isTraceEnabled()) log.trace("stopped : " + deploymentID());
+		stopPromise.complete();
 	}
 
 	////
@@ -215,7 +217,7 @@ public class Interlocking extends AbstractVerticle {
 							// Fetch the battery capacity
 							// バッテリ容量を確保する
 							DeliveryOptions options = new DeliveryOptions().addHeader("command", command);
-							vertx.eventBus().<Boolean>send(ServiceAddress.Controller.batteryCapacityManaging(), deal, options, repBatteryCapacityAcquire -> {
+							vertx.eventBus().<Boolean>request(ServiceAddress.Controller.batteryCapacityManaging(), deal, options, repBatteryCapacityAcquire -> {
 								if (repBatteryCapacityAcquire.succeeded() && repBatteryCapacityAcquire.result().body()) {
 									if (log.isInfoEnabled()) log.info("locked; dealId : " + dealId);
 									req.reply(ApisConfig.unitId());
@@ -253,7 +255,7 @@ public class Interlocking extends AbstractVerticle {
 										// The interchange has gone, so release the battery capacity acquisition
 										// 融通がなくなったのでバッテリ容量の確保を開放する
 										DeliveryOptions options = new DeliveryOptions().addHeader("command", command);
-										vertx.eventBus().<Boolean>send(ServiceAddress.Controller.batteryCapacityManaging(), deal, options, repBatteryCapacityRelease -> {
+										vertx.eventBus().<Boolean>request(ServiceAddress.Controller.batteryCapacityManaging(), deal, options, repBatteryCapacityRelease -> {
 											if (repBatteryCapacityRelease.succeeded()) {
 												if (log.isInfoEnabled()) log.info("unlocked; dealId : " + dealId);
 												req.reply(ApisConfig.unitId());
@@ -303,11 +305,25 @@ public class Interlocking extends AbstractVerticle {
 	private void startResetLocalService_(Handler<AsyncResult<Void>> completionHandler) {
 		vertx.eventBus().<Void>localConsumer(ServiceAddress.resetLocal(), req -> {
 			InterlockUtil.resetExclusiveLock(vertx);
-			Future<Void> resetDealIdFuture = Future.future();
-			Future<Void> resetGridMasterUnitIdFuture = Future.future();
-			doResetLocalDealId_(resetDealIdFuture);
-			doResetLocalGridMasterUnitId_(resetGridMasterUnitIdFuture);
-			CompositeFuture.all(resetDealIdFuture, resetGridMasterUnitIdFuture).setHandler(ar -> {
+			Promise<Void> resetDealIdPromise = Promise.promise();
+			Future<Void> resetDealIdFuture = resetDealIdPromise.future();
+			Promise<Void> resetGridMasterUnitIdPromise = Promise.promise();
+			Future<Void> resetGridMasterUnitIdFuture = resetGridMasterUnitIdPromise.future();
+			doResetLocalDealId_(ar -> {
+				if (ar.succeeded()) {
+					resetDealIdPromise.complete();
+				} else {
+					resetDealIdPromise.fail(ar.cause());
+				}
+			});
+			doResetLocalGridMasterUnitId_(ar -> {
+				if (ar.succeeded()) {
+					resetGridMasterUnitIdPromise.complete();
+				} else {
+					resetGridMasterUnitIdPromise.fail(ar.cause());
+				}
+			});
+			CompositeFuture.all(resetDealIdFuture, resetGridMasterUnitIdFuture).onComplete(ar -> {
 				if (ar.succeeded()) {
 					req.reply(ApisConfig.unitId());
 				} else {
@@ -340,11 +356,25 @@ public class Interlocking extends AbstractVerticle {
 	private void startResetAllService_(Handler<AsyncResult<Void>> completionHandler) {
 		vertx.eventBus().<Void>consumer(ServiceAddress.resetAll(), req -> {
 			InterlockUtil.resetExclusiveLock(vertx);
-			Future<Void> resetDealIdFuture = Future.future();
-			Future<Void> resetGridMasterUnitIdFuture = Future.future();
-			InterlockUtil.resetDealId(vertx, resetDealIdFuture);
-			InterlockUtil.resetGridMasterUnitId(vertx, resetGridMasterUnitIdFuture);
-			CompositeFuture.all(resetDealIdFuture, resetGridMasterUnitIdFuture).setHandler(ar -> {
+			Promise<Void> resetDealIdPromise = Promise.promise();
+			Future<Void> resetDealIdFuture = resetDealIdPromise.future();
+			Promise<Void> resetGridMasterUnitIdPromise = Promise.promise();
+			Future<Void> resetGridMasterUnitIdFuture = resetGridMasterUnitIdPromise.future();
+			InterlockUtil.resetDealId(vertx, ar -> {
+				if (ar.succeeded()) {
+					resetDealIdPromise.complete();
+				} else {
+					resetDealIdPromise.fail(ar.cause());
+				}
+			});
+			InterlockUtil.resetGridMasterUnitId(vertx, ar -> {
+				if (ar.succeeded()) {
+					resetGridMasterUnitIdPromise.complete();
+				} else {
+					resetGridMasterUnitIdPromise.fail(ar.cause());
+				}
+			});
+			CompositeFuture.all(resetDealIdFuture, resetGridMasterUnitIdFuture).onComplete(ar -> {
 				if (ar.succeeded()) {
 					req.reply(ApisConfig.unitId());
 				} else {
@@ -393,7 +423,7 @@ public class Interlocking extends AbstractVerticle {
 				} else {
 					// If the GridMaster interlock value does not match this unit's ID
 					// GridMaster インタロックの値が自ユニットの ID じゃなかったら
-					vertx.eventBus().<String>send(ServiceAddress.GridMaster.helo(), null, repHeloGridMaster -> {
+					vertx.eventBus().<String>request(ServiceAddress.GridMaster.helo(), null, repHeloGridMaster -> {
 						if (repHeloGridMaster.succeeded()) {
 							// Do nothing if a GridMaster exists somewhere
 							// どこかに GridMaster が存在したら何もしない

@@ -1,9 +1,9 @@
 package jp.co.sony.csl.dcoes.apis.main.app.user;
 
 import io.vertx.core.AbstractVerticle;
-import io.vertx.core.Future;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import io.vertx.core.Promise;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * User service object Verticle.
@@ -54,7 +54,7 @@ public class User extends AbstractVerticle {
 	 * @param startFuture {@inheritDoc}
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void start(Future<Void> startFuture) throws Exception {
+	@Override public void start(Promise<Void> startPromise) throws Exception {
 		vertx.deployVerticle(new ErrorCollection(), resErrorCollection -> {
 			if (resErrorCollection.succeeded()) {
 				vertx.deployVerticle(new ErrorHandling(), resErrorHandling -> {
@@ -68,29 +68,29 @@ public class User extends AbstractVerticle {
 												vertx.deployVerticle(new MediatorAcceptsHandling(), resMediatorAcceptsHandling -> {
 													if (resMediatorAcceptsHandling.succeeded()) {
 														if (log.isTraceEnabled()) log.trace("started : " + deploymentID());
-														startFuture.complete();
+														startPromise.complete();
 													} else {
-														startFuture.fail(resMediatorAcceptsHandling.cause());
+														startPromise.fail(resMediatorAcceptsHandling.cause());
 													}
 												});
 											} else {
-												startFuture.fail(resMediatorRequestHandling.cause());
+												startPromise.fail(resMediatorRequestHandling.cause());
 											}
 										});
 									} else {
-										startFuture.fail(resHouseKeeping.cause());
+										startPromise.fail(resHouseKeeping.cause());
 									}
 								});
 							} else {
-								startFuture.fail(resScenarioKeeping.cause());
+								startPromise.fail(resScenarioKeeping.cause());
 							}
 						});
 					} else {
-						startFuture.fail(resErrorHandling.cause());
+						startPromise.fail(resErrorHandling.cause());
 					}
 				});
 			} else {
-				startFuture.fail(resErrorCollection.cause());
+				startPromise.fail(resErrorCollection.cause());
 			}
 		});
 	}
@@ -102,8 +102,9 @@ public class User extends AbstractVerticle {
 	 * 停止時に呼び出される.
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void stop() throws Exception {
+	@Override public void stop(Promise<Void> stopPromise) throws Exception {
 		if (log.isTraceEnabled()) log.trace("stopped : " + deploymentID());
+		stopPromise.complete();
 	}
 
 }

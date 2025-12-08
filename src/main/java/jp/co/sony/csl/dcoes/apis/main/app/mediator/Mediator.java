@@ -1,9 +1,9 @@
 package jp.co.sony.csl.dcoes.apis.main.app.mediator;
 
 import io.vertx.core.AbstractVerticle;
-import io.vertx.core.Future;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import io.vertx.core.Promise;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Mediator sevice object Verticle.
@@ -54,7 +54,7 @@ public class Mediator extends AbstractVerticle {
 	 * @param startFuture {@inheritDoc}
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void start(Future<Void> startFuture) throws Exception {
+	@Override public void start(Promise<Void> startPromise) throws Exception {
 		vertx.deployVerticle(new Interlocking(), resInterlocking -> {
 			if (resInterlocking.succeeded()) {
 				vertx.deployVerticle(new GridMasterManagement(), resGridMasterManagement -> {
@@ -68,29 +68,29 @@ public class Mediator extends AbstractVerticle {
 												vertx.deployVerticle(new InternalRequestHandling(), resInternalRequestHandling -> {
 													if (resInternalRequestHandling.succeeded()) {
 														if (log.isTraceEnabled()) log.trace("started : " + deploymentID());
-														startFuture.complete();
+														startPromise.complete();
 													} else {
-														startFuture.fail(resInternalRequestHandling.cause());
+														startPromise.fail(resInternalRequestHandling.cause());
 													}
 												});
 											} else {
-												startFuture.fail(resExternalRequestHandling.cause());
+												startPromise.fail(resExternalRequestHandling.cause());
 											}
 										});
 									} else {
-										startFuture.fail(resDealLogging.cause());
+										startPromise.fail(resDealLogging.cause());
 									}
 								});
 							} else {
-								startFuture.fail(resDealManagement.cause());
+								startPromise.fail(resDealManagement.cause());
 							}
 						});
 					} else {
-						startFuture.fail(resGridMasterManagement.cause());
+						startPromise.fail(resGridMasterManagement.cause());
 					}
 				});
 			} else {
-				startFuture.fail(resInterlocking.cause());
+				startPromise.fail(resInterlocking.cause());
 			}
 		});
 	}
@@ -102,8 +102,9 @@ public class Mediator extends AbstractVerticle {
 	 * 停止時に呼び出される.
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void stop() throws Exception {
+	@Override public void stop(Promise<Void> stopPromise) throws Exception {
 		if (log.isTraceEnabled()) log.trace("stopped : " + deploymentID());
+		stopPromise.complete();
 	}
 
 }

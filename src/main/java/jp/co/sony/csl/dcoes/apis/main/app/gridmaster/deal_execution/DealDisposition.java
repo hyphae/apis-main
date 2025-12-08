@@ -57,7 +57,7 @@ public class DealDisposition extends AbstractDealExecution {
 	}
 
 	private void disposeDeal_(Handler<AsyncResult<Void>> completionHandler) {
-		vertx_.eventBus().<JsonObject>send(ServiceAddress.Mediator.dealDisposition(), dealId_, repDealDisposition -> {
+		vertx_.eventBus().<JsonObject>request(ServiceAddress.Mediator.dealDisposition(), dealId_, repDealDisposition -> {
 			if (repDealDisposition.succeeded()) {
 				completionHandler.handle(Future.succeededFuture());
 			} else {

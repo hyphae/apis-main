@@ -1,9 +1,9 @@
 package jp.co.sony.csl.dcoes.apis.main.app;
 
 import io.vertx.core.AbstractVerticle;
-import io.vertx.core.Future;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import io.vertx.core.Promise;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import jp.co.sony.csl.dcoes.apis.main.app.controller.Controller;
 import jp.co.sony.csl.dcoes.apis.main.app.mediator.Mediator;
 import jp.co.sony.csl.dcoes.apis.main.app.user.User;
@@ -64,7 +64,7 @@ public class Apis extends AbstractVerticle {
 	 * @param startFuture {@inheritDoc}
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void start(Future<Void> startFuture) throws Exception {
+	@Override public void start(Promise<Void> startPromise) throws Exception {
 		vertx.deployVerticle(new Helo(), resHelo -> {
 			if (resHelo.succeeded()) {
 				vertx.deployVerticle(new HwConfigKeeping(), resHwConfigKeeping -> {
@@ -82,33 +82,33 @@ public class Apis extends AbstractVerticle {
 																logSystemInfo();
 																StateHandling.setStarted();
 																LOGGER.trace("started : {}", deploymentID());
-																startFuture.complete();
+																startPromise.complete();
 															} else {
-																startFuture.fail(resUser.cause());
+																startPromise.fail(resUser.cause());
 															}
 														});
 													} else {
-														startFuture.fail(resMediator.cause());
+														startPromise.fail(resMediator.cause());
 													}
 												});
 											} else {
-												startFuture.fail(resController.cause());
+												startPromise.fail(resController.cause());
 											}
 										});
 									} else {
-										startFuture.fail(resStateHandling.cause());
+										startPromise.fail(resStateHandling.cause());
 									}
 								});
 							} else {
-								startFuture.fail(resPolicyKeeping.cause());
+								startPromise.fail(resPolicyKeeping.cause());
 							}
 						});
 					} else {
-						startFuture.fail(resHwConfigKeeping.cause());
+						startPromise.fail(resHwConfigKeeping.cause());
 					}
 				});
 			} else {
-				startFuture.fail(resHelo.cause());
+				startPromise.fail(resHelo.cause());
 			}
 		});
 	}
@@ -132,9 +132,10 @@ public class Apis extends AbstractVerticle {
 	 * 動作状態を停止中に変更する.
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void stop() throws Exception {
+	@Override public void stop(Promise<Void> stopPromise) throws Exception {
 		StateHandling.setStopping();
 		LOGGER.trace("stopped : {}", deploymentID());
+		stopPromise.complete();
 	}
 
 }

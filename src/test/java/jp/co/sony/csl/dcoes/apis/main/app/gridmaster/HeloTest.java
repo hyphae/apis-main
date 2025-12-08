@@ -46,7 +46,7 @@ public class HeloTest extends AbstractApisTest {
 
 		vertx.deployVerticle(Helo.class.getName(), context.asyncAssertSuccess(s -> {
 			Async async = context.async();
-			vertx.eventBus().send(ServiceAddress.GridMaster.helo(), null, r -> {
+			vertx.eventBus().request(ServiceAddress.GridMaster.helo(), null, r -> {
 				if (r.succeeded()) {
 					context.assertNotNull(r.result().body());
 					context.assertEquals(unitId, String.valueOf(r.result().body()), "返信された値が、期待されたunitIdでない");

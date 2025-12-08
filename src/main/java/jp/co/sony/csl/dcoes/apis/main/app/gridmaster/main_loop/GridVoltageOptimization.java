@@ -114,7 +114,7 @@ public class GridVoltageOptimization {
 					DeliveryOptions options = new DeliveryOptions().addHeader("gridMasterUnitId", ApisConfig.unitId());
 					// Issue an order to change the grid voltage setting for the voltage reference unit
 					// 電圧リファレンスユニットに対しグリッド電圧設定値の変更を命令する
-					vertx.eventBus().<JsonObject>send(ServiceAddress.Controller.deviceControlling(voltageReferenceUnitId), operation, options, rep -> {
+					vertx.eventBus().<JsonObject>request(ServiceAddress.Controller.deviceControlling(voltageReferenceUnitId), operation, options, rep -> {
 						if (rep.succeeded()) {
 							// Reflect the returned device control status in the cache
 							// 返ってきたデバイス制御状態をキャッシュ反映しておく

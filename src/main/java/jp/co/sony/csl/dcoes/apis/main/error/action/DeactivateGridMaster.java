@@ -6,8 +6,8 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import jp.co.sony.csl.dcoes.apis.common.Error;
 import jp.co.sony.csl.dcoes.apis.common.ServiceAddress;
 import jp.co.sony.csl.dcoes.apis.common.util.vertx.ReplyFailureUtil;
@@ -46,7 +46,7 @@ public class DeactivateGridMaster extends AbstractErrorAction {
 	 */
 	@Override protected void doAction(Handler<AsyncResult<Void>> completionHandler) {
 		if (log.isInfoEnabled()) log.info("deactivating GridMaster ...");
-		vertx_.eventBus().send(ServiceAddress.Mediator.gridMasterDeactivation(ApisConfig.unitId()), null, repGridMasterDeactivation -> {
+		vertx_.eventBus().request(ServiceAddress.Mediator.gridMasterDeactivation(ApisConfig.unitId()), null, repGridMasterDeactivation -> {
 			if (repGridMasterDeactivation.succeeded()) {
 				if (log.isInfoEnabled()) log.info("done");
 				completionHandler.handle(Future.succeededFuture());

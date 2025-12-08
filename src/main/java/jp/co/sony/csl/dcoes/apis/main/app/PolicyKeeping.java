@@ -4,10 +4,11 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import io.vertx.core.shareddata.AsyncMap;
 
 import java.util.List;
@@ -130,7 +131,7 @@ public class PolicyKeeping extends AbstractVerticle {
 	 * @throws Exception {@inheritDoc}
 	 */
 	@Override
-	public void start(Future<Void> startFuture) throws Exception {
+	public void start(Promise<Void> startPromise) throws Exception {
 		localFilePath = VertxConfig.config.getString("policyFile");
 		controlCenterEnabled = VertxConfig.config.getBoolean(Boolean.TRUE, "controlCenter", "enabled");
 		if (controlCenterEnabled) {
@@ -157,13 +158,13 @@ public class PolicyKeeping extends AbstractVerticle {
 							controlCenterAccessingTimerHandler(0L);
 						}
 						LOGGER.trace("started : {}", deploymentID());
-						startFuture.complete();
+						startPromise.complete();
 					} else {
-						startFuture.fail(resPolicy.cause());
+						startPromise.fail(resPolicy.cause());
 					}
 				});
 			} else {
-				startFuture.fail(resInit.cause());
+				startPromise.fail(resInit.cause());
 			}
 		});
 	}
@@ -178,9 +179,10 @@ public class PolicyKeeping extends AbstractVerticle {
 	 * @throws Exception {@inheritDoc}
 	 */
 	@Override
-	public void stop() throws Exception {
+	public void stop(Promise<Void> stopPromise) throws Exception {
 		stopped = true;
 		LOGGER.trace("stopped : {}", deploymentID());
+		stopPromise.complete();
 	}
 
 	/**
@@ -414,7 +416,7 @@ public class PolicyKeeping extends AbstractVerticle {
 				.addHeader("password", controlCenterPassword)
 				.addHeader("unitId", ApisConfig.unitId());
 
-		vertx.eventBus().<JsonObject>send(ServiceAddress.ControlCenterClient.policy(), null, options, resPolicy -> {
+		vertx.eventBus().<JsonObject>request(ServiceAddress.ControlCenterClient.policy(), null, options, resPolicy -> {
 			if (resPolicy.succeeded()) {
 				// Keep in cache
 				// キャッシュしておく

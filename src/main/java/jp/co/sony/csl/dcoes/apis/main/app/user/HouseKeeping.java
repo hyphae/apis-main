@@ -4,10 +4,11 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import jp.co.sony.csl.dcoes.apis.common.Error;
 import jp.co.sony.csl.dcoes.apis.common.ServiceAddress;
 import jp.co.sony.csl.dcoes.apis.common.util.vertx.JsonObjectUtil;
@@ -53,10 +54,10 @@ public class HouseKeeping extends AbstractVerticle {
 	 * @param startFuture {@inheritDoc}
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void start(Future<Void> startFuture) throws Exception {
+	@Override public void start(Promise<Void> startPromise) throws Exception {
 		houseKeepingTimerHandler_(0L);
 		if (log.isTraceEnabled()) log.trace("started : " + deploymentID());
-		startFuture.complete();
+		startPromise.complete();
 	}
 
 	/**
@@ -68,9 +69,10 @@ public class HouseKeeping extends AbstractVerticle {
 	 * タイマを止めるためのフラグを立てる.
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void stop() throws Exception {
+	@Override public void stop(Promise<Void> stopPromise) throws Exception {
 		stopped_ = true;
 		if (log.isTraceEnabled()) log.trace("stopped : " + deploymentID());
+		stopPromise.complete();
 	}
 
 	////
@@ -127,7 +129,7 @@ public class HouseKeeping extends AbstractVerticle {
 			if (log.isInfoEnabled()) log.info("this unit has errors : " + ErrorCollection.cache.jsonObject());
 			completionHandler.handle(Future.succeededFuture());
 		} else {
-			vertx.eventBus().<Boolean>send(ServiceAddress.GridMaster.errorTesting(), null, repGlobalErrors -> {
+			vertx.eventBus().<Boolean>request(ServiceAddress.GridMaster.errorTesting(), null, repGlobalErrors -> {
 				if (repGlobalErrors.succeeded()) {
 					Boolean hasGlobalErrors = repGlobalErrors.result().body();
 					if (hasGlobalErrors != null && hasGlobalErrors) {
@@ -169,7 +171,7 @@ public class HouseKeeping extends AbstractVerticle {
 		}
 	}
 	private void doHouseKeeping__(Handler<AsyncResult<Void>> completionHandler) {
-		vertx.eventBus().<JsonObject>send(ServiceAddress.Controller.unitData(), null, repData -> {
+				vertx.eventBus().<JsonObject>request(ServiceAddress.Controller.unitData(), null, repData -> {
 			if (repData.succeeded()) {
 				JsonObject data = repData.result().body();
 				Integer dealInterlockCapacity = JsonObjectUtil.getInteger(data, "apis", "deal_interlock_capacity");
@@ -180,7 +182,7 @@ public class HouseKeeping extends AbstractVerticle {
 					String dateTime = data.getString("time");
 					// Get the SCENARIO corresponding to the current time
 					// 現在時刻に対応する SCENARIO を取得して
-					vertx.eventBus().<JsonObject>send(ServiceAddress.User.scenario(), dateTime, repScenario -> {
+					vertx.eventBus().<JsonObject>request(ServiceAddress.User.scenario(), dateTime, repScenario -> {
 						if (repScenario.succeeded()) {
 							JsonObject scenario = repScenario.result().body();
 							// Evaluate the status (data) of this unit
@@ -194,7 +196,7 @@ public class HouseKeeping extends AbstractVerticle {
 										String direction = request.getString("type");
 										// Check the battery capacity
 										// バッテリ容量をチェックし
-										vertx.eventBus().<Boolean>send(ServiceAddress.Controller.batteryCapacityTesting(), direction, repBatteryCapacityTest -> {
+										vertx.eventBus().<Boolean>request(ServiceAddress.Controller.batteryCapacityTesting(), direction, repBatteryCapacityTest -> {
 											if (repBatteryCapacityTest.succeeded()) {
 												if (repBatteryCapacityTest.result().body()) {
 													// If there is a desired grid voltage, set it in the request

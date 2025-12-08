@@ -5,12 +5,14 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.http.HttpClient;
+import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.Inet4Address;
 import java.net.Inet6Address;
@@ -134,7 +136,7 @@ public abstract class DataAcquisition extends AbstractVerticle {
 	 * @param startFuture {@inheritDoc}
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void start(Future<Void> startFuture) throws Exception {
+	@Override public void start(Promise<Void> startPromise) throws Exception {
 		init(resInit -> {
 			if (resInit.succeeded()) {
 				startInternalUrgentUnitDataService_(resInternalUrgentUnitData -> {
@@ -147,25 +149,25 @@ public abstract class DataAcquisition extends AbstractVerticle {
 											if (resResetAll.succeeded()) {
 												dataAcquisitionTimerHandler_(0L);
 												if (log.isTraceEnabled()) log.trace("started : " + deploymentID());
-												startFuture.complete();
+												startPromise.complete();
 											} else {
-												startFuture.fail(resResetAll.cause());
+												startPromise.fail(resResetAll.cause());
 											}
 										});
 									} else {
-										startFuture.fail(resResetLocal.cause());
+										startPromise.fail(resResetLocal.cause());
 									}
 								});
 							} else {
-								startFuture.fail(resInternalUrgentUnitDeviceStatus.cause());
+								startPromise.fail(resInternalUrgentUnitDeviceStatus.cause());
 							}
 						});
 					} else {
-						startFuture.fail(resInternalUrgentUnitData.cause());
+						startPromise.fail(resInternalUrgentUnitData.cause());
 					}
 				});
 			} else {
-				startFuture.fail(resInit.cause());
+				startPromise.fail(resInit.cause());
 			}
 		});
 	}
@@ -179,9 +181,10 @@ public abstract class DataAcquisition extends AbstractVerticle {
 	 * タイマを止めるためのフラグを立てる.
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void stop() throws Exception {
+	@Override public void stop(Promise<Void> stopPromise) throws Exception {
 		stopped_ = true;
 		if (log.isTraceEnabled()) log.trace("stopped : " + deploymentID());
+		stopPromise.complete();
 	}
 
 	////
@@ -446,12 +449,26 @@ public abstract class DataAcquisition extends AbstractVerticle {
 	private void getData_(Handler<AsyncResult<JsonObject>> completionHandler) {
 		                                      // Record the start time of the data acquisition process
 		long ts = System.currentTimeMillis(); // データ取得処理開始時刻を記録しておく
-		Future<JsonObject> getDataFuture = Future.future();
-		Future<JsonObject> getOesunitFuture = Future.future();
+		Promise<JsonObject> getDataPromise = Promise.promise();
+		Future<JsonObject> getDataFuture = getDataPromise.future();
+		Promise<JsonObject> getOesunitPromise = Promise.promise();
+		Future<JsonObject> getOesunitFuture = getOesunitPromise.future();
 		                        // Call the actual implementation of the subclass for each driver
-		getData(getDataFuture); // ドライバごとのサブクラスの実実装を呼ぶ
-		getOesunit_(getOesunitFuture);
-		CompositeFuture.<JsonObject, JsonObject>all(getDataFuture, getOesunitFuture).setHandler(ar -> {
+		getData(ar -> {
+			if (ar.succeeded()) {
+				getDataPromise.complete(ar.result());
+			} else {
+				getDataPromise.fail(ar.cause());
+			}
+		}); // ドライバごとのサブクラスの実実装を呼ぶ
+		getOesunit_(ar -> {
+			if (ar.succeeded()) {
+				getOesunitPromise.complete(ar.result());
+			} else {
+				getOesunitPromise.fail(ar.cause());
+			}
+		});
+		CompositeFuture.<JsonObject, JsonObject>all(getDataFuture, getOesunitFuture).onComplete(ar -> {
 			if (ar.succeeded()) {
 				                                 // Update the data acquisition process start time
 				lastDataAcquisitionMillis_ = ts; // データ取得処理開始時刻を更新する
@@ -590,13 +607,34 @@ public abstract class DataAcquisition extends AbstractVerticle {
 		}
 		int dealInterlockCapacity = Interlocking.dealInterlockCapacity(vertx);
 		result.put("deal_interlock_capacity", dealInterlockCapacity);
-		Future<String> getGridMasterUnitIdFuture = Future.future();
-		Future<Collection<String>> getDealIdsFuture = Future.future();
-		Future<JsonObject> getOperationModesFuture = Future.future();
-		InterlockUtil.getGridMasterUnitId(vertx, getGridMasterUnitIdFuture);
-		InterlockUtil.getDealIds(vertx, getDealIdsFuture);
-		StateHandling.operationModes(vertx, getOperationModesFuture);
-		CompositeFuture.<String, Collection<String>, JsonObject>all(getGridMasterUnitIdFuture, getDealIdsFuture, getOperationModesFuture).setHandler(ar -> {
+		Promise<String> getGridMasterUnitIdPromise = Promise.promise();
+		Future<String> getGridMasterUnitIdFuture = getGridMasterUnitIdPromise.future();
+		Promise<Collection<String>> getDealIdsPromise = Promise.promise();
+		Future<Collection<String>> getDealIdsFuture = getDealIdsPromise.future();
+		Promise<JsonObject> getOperationModesPromise = Promise.promise();
+		Future<JsonObject> getOperationModesFuture = getOperationModesPromise.future();
+		InterlockUtil.getGridMasterUnitId(vertx, ar -> {
+			if (ar.succeeded()) {
+				getGridMasterUnitIdPromise.complete(ar.result());
+			} else {
+				getGridMasterUnitIdPromise.fail(ar.cause());
+			}
+		});
+		InterlockUtil.getDealIds(vertx, ar -> {
+			if (ar.succeeded()) {
+				getDealIdsPromise.complete(ar.result());
+			} else {
+				getDealIdsPromise.fail(ar.cause());
+			}
+		});
+		StateHandling.operationModes(vertx, ar -> {
+			if (ar.succeeded()) {
+				getOperationModesPromise.complete(ar.result());
+			} else {
+				getOperationModesPromise.fail(ar.cause());
+			}
+		});
+		CompositeFuture.<String, Collection<String>, JsonObject>all(getGridMasterUnitIdFuture, getDealIdsFuture, getOperationModesFuture).onComplete(ar -> {
 			if (ar.succeeded()) {
 				String gridMasterUnitId = ar.result().resultAt(0);
 				Collection<String> dealIds = ar.result().resultAt(1);
@@ -750,27 +788,27 @@ public abstract class DataAcquisition extends AbstractVerticle {
 		 * Refactoring should be planned once the project is upgraded to a newer Vert.x version (3.6+ or 4.x)
 		 * where modern APIs are available.
 		 */
-		@SuppressWarnings("deprecation")
 		private void send_(HttpClient client, String uri, Handler<AsyncResult<JsonObject>> completionHandler) {
 			if (log.isInfoEnabled()) log.info("uri : " + uri);
 			Long requestTimeoutMsec = PolicyKeeping.cache().getLong(DEFAULT_REQUEST_TIMEOUT_MSEC, "controller", "requestTimeoutMsec");
-			client.get(uri, resGet -> {
-				if (200 == resGet.statusCode()) {
-					resGet.bodyHandler(body -> {
+			client.request(HttpMethod.GET, uri)
+				.compose(request -> request.send())
+				.onSuccess(response -> {
+					if (response.statusCode() == 200) {
+						response.body()
+							.onSuccess(body -> {
 						JsonObjectUtil.toJsonObject(body, completionHandler);
-					}).exceptionHandler(t -> {
-						completionHandler.handle(Future.failedFuture(t));
-					});
+							})
+							.onFailure(t -> completionHandler.handle(Future.failedFuture(t)));
 				} else {
-					resGet.bodyHandler(error -> {
-						completionHandler.handle(Future.failedFuture("http request failed : " + resGet.statusCode() + " : " + resGet.statusMessage() + " : " + error));
-					}).exceptionHandler(t -> {
-						completionHandler.handle(Future.failedFuture("http request failed : " + resGet.statusCode() + " : " + resGet.statusMessage() + " : " + t));
-					});
+						response.body()
+							.onSuccess(error -> {
+								completionHandler.handle(Future.failedFuture("http request failed : " + response.statusCode() + " : " + response.statusMessage() + " : " + error));
+							})
+							.onFailure(t -> completionHandler.handle(Future.failedFuture("http request failed : " + response.statusCode() + " : " + response.statusMessage() + " : " + t)));
 				}
-			}).setTimeout(requestTimeoutMsec).exceptionHandler(t -> {
-				completionHandler.handle(Future.failedFuture(t));
-			}).end();
+				})
+				.onFailure(t -> completionHandler.handle(Future.failedFuture(t)));
 		}
 	}
 

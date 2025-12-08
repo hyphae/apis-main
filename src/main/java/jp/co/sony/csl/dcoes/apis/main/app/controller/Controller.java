@@ -1,9 +1,9 @@
 package jp.co.sony.csl.dcoes.apis.main.app.controller;
 
 import io.vertx.core.AbstractVerticle;
-import io.vertx.core.Future;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import io.vertx.core.Promise;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import jp.co.sony.csl.dcoes.apis.main.factory.Factory;
 
 /**
@@ -47,7 +47,7 @@ public class Controller extends AbstractVerticle {
 	 * @param startFuture {@inheritDoc}
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void start(Future<Void> startFuture) throws Exception {
+	@Override public void start(Promise<Void> startPromise) throws Exception {
 		DataAcquisition dataAcquisition = Factory.factory().controllerFactory().createDataAcquisition();
 		vertx.deployVerticle(dataAcquisition, resDataAcquisition -> {
 			if (resDataAcquisition.succeeded()) {
@@ -60,21 +60,21 @@ public class Controller extends AbstractVerticle {
 								vertx.deployVerticle(new BatteryCapacityManagement(), resBatteryCapacityManagement -> {
 									if (resBatteryCapacityManagement.succeeded()) {
 										if (log.isTraceEnabled()) log.trace("started : " + deploymentID());
-										startFuture.complete();
+										startPromise.complete();
 									} else {
-										startFuture.fail(resBatteryCapacityManagement.cause());
+										startPromise.fail(resBatteryCapacityManagement.cause());
 									}
 								});
 							} else {
-								startFuture.fail(resDeviceControlling.cause());
+								startPromise.fail(resDeviceControlling.cause());
 							}
 						});
 					} else {
-						startFuture.fail(resDataResponding.cause());
+						startPromise.fail(resDataResponding.cause());
 					}
 				});
 			} else {
-				startFuture.fail(resDataAcquisition.cause());
+				startPromise.fail(resDataAcquisition.cause());
 			}
 		});
 	}
@@ -86,8 +86,9 @@ public class Controller extends AbstractVerticle {
 	 * 停止時に呼び出される.
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void stop() throws Exception {
+	@Override public void stop(Promise<Void> stopPromise) throws Exception {
 		if (log.isTraceEnabled()) log.trace("stopped : " + deploymentID());
+		stopPromise.complete();
 	}
 
 }

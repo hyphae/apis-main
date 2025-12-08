@@ -4,11 +4,12 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import jp.co.sony.csl.dcoes.apis.common.Error;
 import jp.co.sony.csl.dcoes.apis.common.ServiceAddress;
 import jp.co.sony.csl.dcoes.apis.common.util.vertx.JsonObjectWrapper;
@@ -81,7 +82,7 @@ public class GridMasterManagement extends AbstractVerticle {
 	 * @param startFuture {@inheritDoc}
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void start(Future<Void> startFuture) throws Exception {
+	@Override public void start(Promise<Void> startPromise) throws Exception {
 		startGridMasterActivationService_(resGridMasterActivation -> {
 			if (resGridMasterActivation.succeeded()) {
 				startGridMasterDeactivationService_(resGridMasterDeactivation -> {
@@ -94,25 +95,25 @@ public class GridMasterManagement extends AbstractVerticle {
 											if (resResetAll.succeeded()) {
 												gridMasterWatchingTimerHandler_(0L);
 												if (log.isTraceEnabled()) log.trace("started : " + deploymentID());
-												startFuture.complete();
+												startPromise.complete();
 											} else {
-												startFuture.fail(resResetAll.cause());
+												startPromise.fail(resResetAll.cause());
 											}
 										});
 									} else {
-										startFuture.fail(resResetLocal.cause());
+										startPromise.fail(resResetLocal.cause());
 									}
 								});
 							} else {
-								startFuture.fail(resGridMasterEnsuring.cause());
+								startPromise.fail(resGridMasterEnsuring.cause());
 							}
 						});
 					} else {
-						startFuture.fail(resGridMasterDeactivation.cause());
+						startPromise.fail(resGridMasterDeactivation.cause());
 					}
 				});
 			} else {
-				startFuture.fail(resGridMasterActivation.cause());
+				startPromise.fail(resGridMasterActivation.cause());
 			}
 		});
 	}
@@ -126,9 +127,10 @@ public class GridMasterManagement extends AbstractVerticle {
 	 * タイマを止めるためのフラグを立てる.
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void stop() throws Exception {
+	@Override public void stop(Promise<Void> stopPromise) throws Exception {
 		stopped_ = true;
 		if (log.isTraceEnabled()) log.trace("stopped : " + deploymentID());
+		stopPromise.complete();
 	}
 
 	////
@@ -192,16 +194,16 @@ public class GridMasterManagement extends AbstractVerticle {
 	}
 	private void doGridMasterActivationWithExclusiveLock_(Handler<AsyncResult<Void>> completionHandler) {
 		DeliveryOptions acquireOptions = new DeliveryOptions().addHeader("command", "acquire");
-		vertx.eventBus().send(ServiceAddress.Mediator.gridMasterInterlocking(), ApisConfig.unitId(), acquireOptions, repAcquire -> {
+		vertx.eventBus().request(ServiceAddress.Mediator.gridMasterInterlocking(), ApisConfig.unitId(), acquireOptions, repAcquire -> {
 			if (repAcquire.succeeded()) {
 				vertx.deployVerticle(new GridMaster(), resDeployGridMaster -> {
 					if (resDeployGridMaster.succeeded()) {
 						completionHandler.handle(Future.succeededFuture());
 					} else {
-						log.error(resDeployGridMaster.cause());
+						log.error("Error deploying GridMaster", resDeployGridMaster.cause());
 						System.err.println(resDeployGridMaster.cause());
 						DeliveryOptions releaseOptions = new DeliveryOptions().addHeader("command", "release");
-						vertx.eventBus().send(ServiceAddress.Mediator.gridMasterInterlocking(), ApisConfig.unitId(), releaseOptions, repRelease -> {
+						vertx.eventBus().request(ServiceAddress.Mediator.gridMasterInterlocking(), ApisConfig.unitId(), releaseOptions, repRelease -> {
 							if (repRelease.succeeded()) {
 								// nop
 							} else {
@@ -279,10 +281,10 @@ public class GridMasterManagement extends AbstractVerticle {
 		}).completionHandler(completionHandler);
 	}
 	private void doGridMasterDeactivationWithExclusiveLock_(Handler<AsyncResult<Void>> completionHandler) {
-		vertx.eventBus().send(ServiceAddress.GridMaster.undeploymentLocal(), null, repUndeploy -> {
+		vertx.eventBus().request(ServiceAddress.GridMaster.undeploymentLocal(), null, repUndeploy -> {
 			if (repUndeploy.succeeded()) {
 				DeliveryOptions releaseOptions = new DeliveryOptions().addHeader("command", "release");
-				vertx.eventBus().send(ServiceAddress.Mediator.gridMasterInterlocking(), ApisConfig.unitId(), releaseOptions, repRelease -> {
+				vertx.eventBus().request(ServiceAddress.Mediator.gridMasterInterlocking(), ApisConfig.unitId(), releaseOptions, repRelease -> {
 					if (repRelease.succeeded()) {
 						completionHandler.handle(Future.succeededFuture());
 					} else {
@@ -337,7 +339,7 @@ public class GridMasterManagement extends AbstractVerticle {
 			String properGridMasterUnitId = properGridMasterUnitId_();
 			// First check that a GridMaster exists, and if so, where
 			// まず GridMaster がいるか, いるならどこかを確認する
-			vertx.eventBus().<String>send(ServiceAddress.GridMaster.helo(), null, repHeloGridMaster -> {
+			vertx.eventBus().<String>request(ServiceAddress.GridMaster.helo(), null, repHeloGridMaster -> {
 				if (repHeloGridMaster.succeeded()) {
 					// A GridMaster exists somewhere
 					// どこかに GridMaster が存在する
@@ -372,7 +374,7 @@ public class GridMasterManagement extends AbstractVerticle {
 						if (log.isInfoEnabled()) log.info("should move GridMaster");
 						// First drop the current one
 						// まず今のを落とす
-						vertx.eventBus().<String>send(ServiceAddress.Mediator.gridMasterDeactivation(gridMasterUnitId), null, repGridMasterDeactivation -> {
+						vertx.eventBus().<String>request(ServiceAddress.Mediator.gridMasterDeactivation(gridMasterUnitId), null, repGridMasterDeactivation -> {
 							if (repGridMasterDeactivation.succeeded()) {
 								// Set in the right place
 								// 正しいところに立てる
@@ -440,7 +442,7 @@ public class GridMasterManagement extends AbstractVerticle {
 									// Wait a little and call this process again
 									// ちょっと待ってもう一度この処理をよぶ
 									vertx.setTimer(retryWaitMsec, timerId -> {
-										vertx.eventBus().<String>send(ServiceAddress.Mediator.gridMasterEnsuring(), null, repAgain -> {
+										vertx.eventBus().<String>request(ServiceAddress.Mediator.gridMasterEnsuring(), null, repAgain -> {
 											if (repAgain.succeeded()) {
 												// Clear the first inconsistency if successful
 												// 成功したら一回目の不整合をクリア
@@ -468,7 +470,7 @@ public class GridMasterManagement extends AbstractVerticle {
 		}).completionHandler(completionHandler);
 	}
 	private void activateGridMaster_(String unitId, Handler<AsyncResult<Void>> completionHandler) {
-		vertx.eventBus().<String>send(ServiceAddress.Mediator.gridMasterActivation(unitId), null, repGridMasterActivation -> {
+		vertx.eventBus().<String>request(ServiceAddress.Mediator.gridMasterActivation(unitId), null, repGridMasterActivation -> {
 			if (repGridMasterActivation.succeeded()) {
 				String newGridMasterUnitId = repGridMasterActivation.result().body();
 				if (unitId.equals(newGridMasterUnitId)) {
@@ -619,7 +621,7 @@ public class GridMasterManagement extends AbstractVerticle {
 			// 本稼働中でなければスルー
 			setGridMasterWatchingTimer_();
 		} else {
-			vertx.eventBus().<String>send(ServiceAddress.GridMaster.helo(), null, repHeloGridMaster -> {
+			vertx.eventBus().<String>request(ServiceAddress.GridMaster.helo(), null, repHeloGridMaster -> {
 				if (repHeloGridMaster.succeeded()) {
 					// If there is a GridMaster somewhere, then this is OK
 					// どこかに GridMaster がいたらそれで OK

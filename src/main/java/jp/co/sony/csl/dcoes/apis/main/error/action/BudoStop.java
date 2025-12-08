@@ -7,8 +7,8 @@ import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import jp.co.sony.csl.dcoes.apis.common.Error;
 import jp.co.sony.csl.dcoes.apis.common.ServiceAddress;
 import jp.co.sony.csl.dcoes.apis.common.util.vertx.ReplyFailureUtil;
@@ -49,7 +49,7 @@ public class BudoStop extends AbstractErrorAction {
 		// Set the global interchange mode to "stop".
 		// グローバル融通モードを "stop" に設定する
 		DeliveryOptions options = new DeliveryOptions().addHeader("command", "set");
-		vertx_.eventBus().send(ServiceAddress.operationMode(), "stop", options, repSetGlobalOperationMode -> {
+		vertx_.eventBus().request(ServiceAddress.operationMode(), "stop", options, repSetGlobalOperationMode -> {
 			if (repSetGlobalOperationMode.succeeded()) {
 				if (log.isInfoEnabled()) log.info("done");
 				completionHandler.handle(Future.succeededFuture());

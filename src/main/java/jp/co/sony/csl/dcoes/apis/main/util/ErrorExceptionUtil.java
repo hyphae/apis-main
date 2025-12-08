@@ -5,8 +5,8 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.Message;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import jp.co.sony.csl.dcoes.apis.common.Error;
 import jp.co.sony.csl.dcoes.apis.common.ErrorException;
 import jp.co.sony.csl.dcoes.apis.common.util.StackTraceUtil;
@@ -326,10 +326,10 @@ public class ErrorExceptionUtil {
 			log.error(message);
 			break;
 		case FATAL:
-			log.fatal(message);
+			log.error(message);
 			break;
 		default:
-			log.fatal(message);
+			log.error(message);
 			break;
 		}
 	}

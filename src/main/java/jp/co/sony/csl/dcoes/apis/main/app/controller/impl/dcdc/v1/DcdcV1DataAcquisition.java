@@ -4,6 +4,7 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.json.JsonObject;
@@ -85,11 +86,25 @@ public class DcdcV1DataAcquisition extends DcdcDataAcquisition {
 	 * - 現在日時を APIS プログラムの標準フォーマットの文字列で {@code time} にセットする
 	 */
 	@Override protected void getData(Handler<AsyncResult<JsonObject>> completionHandler) {
-		Future<JsonObject> getDcdcFuture = Future.future();
-		Future<JsonObject> getEmuFuture = Future.future();
-		getDcdc_(getDcdcFuture);
-		getEmu_(getEmuFuture);
-		CompositeFuture.<JsonObject, JsonObject>all(getDcdcFuture, getEmuFuture).setHandler(ar -> {
+		Promise<JsonObject> getDcdcPromise = Promise.promise();
+		Future<JsonObject> getDcdcFuture = getDcdcPromise.future();
+		Promise<JsonObject> getEmuPromise = Promise.promise();
+		Future<JsonObject> getEmuFuture = getEmuPromise.future();
+		getDcdc_(ar -> {
+			if (ar.succeeded()) {
+				getDcdcPromise.complete(ar.result());
+			} else {
+				getDcdcPromise.fail(ar.cause());
+			}
+		});
+		getEmu_(ar -> {
+			if (ar.succeeded()) {
+				getEmuPromise.complete(ar.result());
+			} else {
+				getEmuPromise.fail(ar.cause());
+			}
+		});
+		CompositeFuture.<JsonObject, JsonObject>all(getDcdcFuture, getEmuFuture).onComplete(ar -> {
 			if (ar.succeeded()) {
 				JsonObject dcdc = ar.result().resultAt(0);
 				JsonObject emu = ar.result().resultAt(1);

@@ -39,13 +39,13 @@ public abstract class AbstractApisTest {
 		VertxConfig.config.setJsonObject(config);
 		EncryptionUtil.initialize(r -> {
 			if (r.succeeded()) {
-				Vertx.clusteredVertx(options, rr -> {
-					if (rr.succeeded()) {
+				Vertx.clusteredVertx(options)
+					.onSuccess(vertxInstance -> {
 						VertxConfig.config.setJsonObject(config);
-						cf.complete(rr.result());
-					} else {
-						cf.completeExceptionally(rr.cause());
-					}
+						cf.complete(vertxInstance);
+					})
+					.onFailure(cause -> {
+						cf.completeExceptionally(cause);
 				});
 				try {
 					vertx = cf.get();
@@ -60,7 +60,9 @@ public abstract class AbstractApisTest {
 
 	@After
 	public void after(TestContext context) {
-		vertx.close(context.asyncAssertSuccess());
+		if (vertx != null) {
+			vertx.close().onComplete(context.asyncAssertSuccess());
+		}
 	}
 
 	private JsonObject setupAndReadConfigFile_() {

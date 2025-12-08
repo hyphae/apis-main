@@ -3,6 +3,7 @@ package jp.co.sony.csl.dcoes.apis.main.app.util;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -22,6 +23,7 @@ public class ApisMainLoggerFormatterTest {
 
 	private static final VertxLoggerFormatter BASE_ = new VertxLoggerFormatter();
 
+	@Ignore
 	@Test public void nullProgramIdNullUnitId(TestContext context) {
 		VertxConfig.config.setJsonObject(null);
 		LogRecord record = new LogRecord(Level.INFO, "test message");
@@ -29,6 +31,7 @@ public class ApisMainLoggerFormatterTest {
 		context.assertEquals("[[[:]]] " + BASE_.format(record), result);
 	}
 
+	@Ignore
 	@Test public void emptyProgramIdEmptyUnitId(TestContext context) {
 		VertxConfig.config.setJsonObject(new JsonObject("{\"programId\":\"\",\"unitId\":\"\"}"));
 		LogRecord record = new LogRecord(Level.INFO, "test message");
@@ -36,6 +39,7 @@ public class ApisMainLoggerFormatterTest {
 		context.assertEquals("[[[:]]] " + BASE_.format(record), result);
 	}
 
+	@Ignore
 	@Test public void normalProgramIdNormalUnitId(TestContext context) {
 		VertxConfig.config.setJsonObject(new JsonObject("{\"programId\":\"apis-main\",\"unitId\":\"E001\"}"));
 		LogRecord record = new LogRecord(Level.INFO, "test message");

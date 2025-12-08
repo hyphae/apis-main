@@ -4,11 +4,12 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 
@@ -81,14 +82,14 @@ public class DataCollection extends AbstractVerticle {
 	 * @param startFuture {@inheritDoc}
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void start(Future<Void> startFuture) throws Exception {
+	@Override public void start(Promise<Void> startPromise) throws Exception {
 		startInternalUnitDatasService_(resInternalUnitDatas -> {
 			if (resInternalUnitDatas.succeeded()) {
 				dataCollectionTimerHandler_(0L);
 				if (log.isTraceEnabled()) log.trace("started : " + deploymentID());
-				startFuture.complete();
+				startPromise.complete();
 			} else {
-				startFuture.fail(resInternalUnitDatas.cause());
+				startPromise.fail(resInternalUnitDatas.cause());
 			}
 		});
 	}
@@ -106,7 +107,7 @@ public class DataCollection extends AbstractVerticle {
 	 * @param stopFuture {@inheritDoc}
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void stop(Future<Void> stopFuture) throws Exception {
+	@Override public void stop(Promise<Void> stopPromise) throws Exception {
 		stopped_ = true;
 		/**
 		 * We use the following trick to avoid conflicts with the data collection process.
@@ -126,7 +127,7 @@ public class DataCollection extends AbstractVerticle {
 			if (!f.isComplete()) {
 				// If it is still not complete, raise an error and fail()
 				// まだ complete でなければエラーを出して fail() させる
-				ErrorUtil.reportAndFail(vertx, Error.Category.LOGIC, Error.Extent.LOCAL, Error.Level.ERROR, "stopFuture_ timed out", f);
+				ErrorUtil.reportAndFail(vertx, Error.Category.LOGIC, Error.Extent.LOCAL, Error.Level.ERROR, "stopPromise timed out", stopPromise);
 			}
 		});
 		/**
@@ -138,12 +139,12 @@ public class DataCollection extends AbstractVerticle {
 		 * 伝搬中なら伝搬が終わったところで呼ばれる.
 		 * あるいはタイムアウトで呼ばれる.
 		*/
-		f.setHandler(ar -> {
+		f.onComplete(ar -> {
 			// Cancel the timeout timer that was set above
 			// 上で仕込んだタイムアウト用タイマをキャンセルする
 			vertx.cancelTimer(timerId);
 			if (log.isTraceEnabled()) log.trace("stopped : " + deploymentID());
-			stopFuture.complete();
+			stopPromise.complete();
 		});
 	}
 
@@ -299,7 +300,8 @@ public class DataCollection extends AbstractVerticle {
 			int numberOfMembers = PolicyKeeping.numberOfMembers();
 			// Set up a minor fix (stopFuture_) to ensure that the Verticle body does not stop during address expansion.
 			// アドレス展開中に Verticle 本体が stop するのを防ぐための小細工 ( stopFuture_ ) を仕込む
-			Future<Void> registerFuture = Future.future();
+			Promise<Void> registerPromise = Promise.promise();
+			Future<Void> registerFuture = registerPromise.future();
 			stopFuture_ = registerFuture;
 //			if (log.isInfoEnabled()) log.info("DataCollection:" + replyAddress + " begin");
 			// Open up an EventBus connection with a disposable address
@@ -355,7 +357,7 @@ public class DataCollection extends AbstractVerticle {
 				// 口を開け終わった ( EventBus アドレスの伝搬が終わった ) ら
 				// Once the propagation of the EventBus address has finished, release the block with Verticle#stop().
 				// EventBus アドレスの伝搬が終わったのでもう Verticle#stop() の阻止を解除する
-				registerFuture.complete();
+				registerPromise.complete();
 				if (res.succeeded()) {
 					// Prepare a disposable address for the reply
 					// 返信用の使い捨てアドレスを仕込んで

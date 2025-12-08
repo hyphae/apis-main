@@ -4,10 +4,11 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import jp.co.sony.csl.dcoes.apis.common.Error;
 import jp.co.sony.csl.dcoes.apis.common.ServiceAddress;
 import jp.co.sony.csl.dcoes.apis.common.util.vertx.JsonObjectWrapper;
@@ -58,19 +59,19 @@ public class ErrorCollection extends AbstractVerticle {
 	 * @param startFuture {@inheritDoc}
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void start(Future<Void> startFuture) throws Exception {
+	@Override public void start(Promise<Void> startPromise) throws Exception {
 		startErrorTestingService_(resErrorTesting -> {
 			if (resErrorTesting.succeeded()) {
 				startErrorCollectingService_(resErrorCollecting -> {
 					if (resErrorCollecting.succeeded()) {
 						if (log.isTraceEnabled()) log.trace("started : " + deploymentID());
-						startFuture.complete();
+						startPromise.complete();
 					} else {
-						startFuture.fail(resErrorCollecting.cause());
+						startPromise.fail(resErrorCollecting.cause());
 					}
 				});
 			} else {
-				startFuture.fail(resErrorTesting.cause());
+				startPromise.fail(resErrorTesting.cause());
 			}
 		});
 	}
@@ -82,8 +83,9 @@ public class ErrorCollection extends AbstractVerticle {
 	 * 停止時に呼び出される.
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void stop() throws Exception {
+	@Override public void stop(Promise<Void> stopPromise) throws Exception {
 		if (log.isTraceEnabled()) log.trace("stopped : " + deploymentID());
+		stopPromise.complete();
 	}
 
 	////
@@ -174,10 +176,10 @@ public class ErrorCollection extends AbstractVerticle {
 			log.error(Error.logMessage(error));
 			break;
 		case FATAL:
-			log.fatal(Error.logMessage(error));
+			log.error(Error.logMessage(error));
 			break;
 		default:
-			log.fatal(Error.logMessage(error));
+			log.error(Error.logMessage(error));
 			break;
 		}
 	}

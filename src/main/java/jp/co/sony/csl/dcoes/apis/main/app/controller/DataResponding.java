@@ -4,10 +4,11 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import jp.co.sony.csl.dcoes.apis.common.Error;
 import jp.co.sony.csl.dcoes.apis.common.ServiceAddress;
 import jp.co.sony.csl.dcoes.apis.common.util.vertx.LocalExclusiveLock;
@@ -45,7 +46,7 @@ public abstract class DataResponding extends AbstractVerticle {
 	 * @param startFuture {@inheritDoc}
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void start(Future<Void> startFuture) throws Exception {
+	@Override public void start(Promise<Void> startPromise) throws Exception {
 		startInternalUnitDataService_(resInternalUnitData -> {
 			if (resInternalUnitData.succeeded()) {
 				startExternalUnitDataService_(resExternalUnitData -> {
@@ -57,25 +58,25 @@ public abstract class DataResponding extends AbstractVerticle {
 										startUnitDatasService_(resUnitDatas -> {
 											if (resUnitDatas.succeeded()) {
 												if (log.isTraceEnabled()) log.trace("started : " + deploymentID());
-												startFuture.complete();
+												startPromise.complete();
 											} else {
-												startFuture.fail(resUnitDatas.cause());
+												startPromise.fail(resUnitDatas.cause());
 											}
 										});
 									} else {
-										startFuture.fail(resExternalUnitDeviceStatus.cause());
+										startPromise.fail(resExternalUnitDeviceStatus.cause());
 									}
 								});
 							} else {
-								startFuture.fail(resInternalUnitDeviceStatus.cause());
+								startPromise.fail(resInternalUnitDeviceStatus.cause());
 							}
 						});
 					} else {
-						startFuture.fail(resExternalUnitData.cause());
+						startPromise.fail(resExternalUnitData.cause());
 					}
 				});
 			} else {
-				startFuture.fail(resInternalUnitData.cause());
+				startPromise.fail(resInternalUnitData.cause());
 			}
 		});
 	}
@@ -87,8 +88,9 @@ public abstract class DataResponding extends AbstractVerticle {
 	 * 停止時に呼び出される.
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void stop() throws Exception {
+	@Override public void stop(Promise<Void> stopPromise) throws Exception {
 		if (log.isTraceEnabled()) log.trace("stopped : " + deploymentID());
+		stopPromise.complete();
 	}
 
 	////
@@ -330,7 +332,7 @@ public abstract class DataResponding extends AbstractVerticle {
 								vertx.eventBus().send(replyAddress, resGetData.result());
 //								if (log.isInfoEnabled()) log.info("DataResponding:" + replyAddress + " replied");
 							} else {
-								log.error(resGetData.cause());
+								log.error("Error getting data", resGetData.cause());
 							}
 						});
 					}
@@ -418,7 +420,7 @@ public abstract class DataResponding extends AbstractVerticle {
 		}
 	}
 	private void doGetDeviceStatusWithExclusiveLock_(Handler<AsyncResult<JsonObject>> completionHandler) {
-		vertx.eventBus().<JsonObject>send(ServiceAddress.Controller.urgentUnitDeviceStatus(), null, rep -> {
+		vertx.eventBus().<JsonObject>request(ServiceAddress.Controller.urgentUnitDeviceStatus(), null, rep -> {
 			if (rep.succeeded()) {
 				completionHandler.handle(Future.succeededFuture(rep.result().body()));
 			} else {
@@ -463,7 +465,7 @@ public abstract class DataResponding extends AbstractVerticle {
 		}
 	}
 	private void doGetDataWithExclusiveLock_(Handler<AsyncResult<JsonObject>> completionHandler) {
-		vertx.eventBus().<JsonObject>send(ServiceAddress.Controller.urgentUnitData(), null, rep -> {
+		vertx.eventBus().<JsonObject>request(ServiceAddress.Controller.urgentUnitData(), null, rep -> {
 			if (rep.succeeded()) {
 				completionHandler.handle(Future.succeededFuture(rep.result().body()));
 			} else {

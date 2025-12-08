@@ -4,8 +4,9 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import io.vertx.core.Promise;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import jp.co.sony.csl.dcoes.apis.common.Error;
 import jp.co.sony.csl.dcoes.apis.common.ServiceAddress;
 import jp.co.sony.csl.dcoes.apis.common.util.vertx.ReplyFailureUtil;
@@ -51,7 +52,7 @@ public class Helo extends AbstractVerticle {
 	 * @param startFuture {@inheritDoc}
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void start(Future<Void> startFuture) throws Exception {
+	@Override public void start(Promise<Void> startPromise) throws Exception {
 		// Check for the existence of a unit with the same ID at startup
 		// 起動時に同一 ID を持つユニットの存在を確認する
 		checkUniqueness_(resCheckUniqueness -> {
@@ -62,15 +63,15 @@ public class Helo extends AbstractVerticle {
 					if (resHelo.succeeded()) {
 						heloTimerHandler_(0L);
 						if (LOGGER.isTraceEnabled()) LOGGER.trace("started : " + deploymentID());
-						startFuture.complete();
+						startPromise.complete();
 					} else {
-						startFuture.fail(resHelo.cause());
+						startPromise.fail(resHelo.cause());
 					}
 				});
 			} else {
 				// Same ID check failed (present) → startup failed
 				// 同一 ID 確認 NG ( いた ) → 起動失敗
-				startFuture.fail(resCheckUniqueness.cause());
+				startPromise.fail(resCheckUniqueness.cause());
 			}
 		});
 	}
@@ -84,15 +85,16 @@ public class Helo extends AbstractVerticle {
 	 * タイマを止めるためのフラグを立てる.
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void stop() throws Exception {
+	@Override public void stop(Promise<Void> stopPromise) throws Exception {
 		stopped_ = true;
 		if (LOGGER.isTraceEnabled()) LOGGER.trace("stopped : " + deploymentID());
+		stopPromise.complete();
 	}
 
 	////
 
 	private void checkUniqueness_(Handler<AsyncResult<Void>> completionHandler) {
-		vertx.eventBus().send(ServiceAddress.helo(ApisConfig.unitId()), null, repHelo -> {
+		vertx.eventBus().request(ServiceAddress.helo(ApisConfig.unitId()), null, repHelo -> {
 			if (repHelo.succeeded()) {
 				// Fail if there is a reply
 				// 返事があったら失敗

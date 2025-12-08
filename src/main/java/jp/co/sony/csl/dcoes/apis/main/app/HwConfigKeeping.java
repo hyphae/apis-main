@@ -4,9 +4,10 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import jp.co.sony.csl.dcoes.apis.common.Error;
 import jp.co.sony.csl.dcoes.apis.common.util.vertx.JsonObjectUtil;
 import jp.co.sony.csl.dcoes.apis.common.util.vertx.JsonObjectWrapper;
@@ -62,14 +63,14 @@ public class HwConfigKeeping extends AbstractVerticle {
 	 * @throws Exception {@inheritDoc}
 	 */
 	@Override
-	public void start(Future<Void> startFuture) throws Exception {
+	public void start(Promise<Void> startPromise) throws Exception {
 		localFilePath = VertxConfig.config.getString("hwConfigFile");
 		LOGGER.info("hwConfigFile : {}", localFilePath);
 		LOGGER.info("hwConfigFile.defaultRefreshingPeriodMsec : {}", LOCAL_FILE_DEFAULT_REFRESHING_PERIOD_MSEC);
 
 		localFileReadingTimerHandler(0L);
 		LOGGER.trace("started : {}", deploymentID());
-		startFuture.complete();
+		startPromise.complete();
 	}
 
 	/**
@@ -82,9 +83,10 @@ public class HwConfigKeeping extends AbstractVerticle {
 	 * @throws Exception {@inheritDoc}
 	 */
 	@Override
-	public void stop() throws Exception {
+	public void stop(Promise<Void> stopPromise) throws Exception {
 		stopped = true;
 		LOGGER.trace("stopped : {}", deploymentID());
+		stopPromise.complete();
 	}
 
 	/**

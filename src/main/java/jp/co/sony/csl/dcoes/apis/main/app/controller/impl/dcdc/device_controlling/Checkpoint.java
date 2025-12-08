@@ -113,7 +113,7 @@ public class Checkpoint extends AbstractDcdcDeviceControllingCommand {
 		vertx_.setTimer(retryWaitMsec_, timerId -> {
 			// Fetch device information
 			// デバイスの情報を取得する
-			vertx_.eventBus().<JsonObject>send(ServiceAddress.Controller.urgentUnitDeviceStatus(), null, rep -> {
+			vertx_.eventBus().<JsonObject>request(ServiceAddress.Controller.urgentUnitDeviceStatus(), null, rep -> {
 				if (rep.succeeded()) {
 					boolean vgResult = true;
 					boolean igResult = true;

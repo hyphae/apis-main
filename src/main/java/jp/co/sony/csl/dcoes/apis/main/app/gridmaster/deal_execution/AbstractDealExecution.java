@@ -4,6 +4,7 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.json.JsonObject;
@@ -260,7 +261,7 @@ public abstract class AbstractDealExecution {
 		// Send the ID of this unit for GridMaster interlock
 		// GridMaster インタロックのため自ユニットの ID を送る
 		DeliveryOptions options = new DeliveryOptions().addHeader("gridMasterUnitId", ApisConfig.unitId());
-		vertx_.eventBus().<JsonObject>send(ServiceAddress.Controller.deviceControlling(unitId), operation, options, rep -> {
+		vertx_.eventBus().<JsonObject>request(ServiceAddress.Controller.deviceControlling(unitId), operation, options, rep -> {
 			if (rep.succeeded()) {
 				// Merge various resulting device control states
 				// 結果のデバイス制御状態をもろもろマージする
@@ -291,7 +292,7 @@ public abstract class AbstractDealExecution {
 		DeliveryOptions options = new DeliveryOptions();
 		options.addHeader("gridMasterUnitId", ApisConfig.unitId());
 		options.addHeader("urgent", "true");
-		vertx_.eventBus().<JsonObject>send(ServiceAddress.Controller.unitDeviceStatus(unitId), null, options, rep -> {
+		vertx_.eventBus().<JsonObject>request(ServiceAddress.Controller.unitDeviceStatus(unitId), null, options, rep -> {
 			if (rep.succeeded()) {
 				mergeUnitDcdc_(unitId, rep.result().body());
 				completionHandler.handle(Future.succeededFuture());
@@ -379,11 +380,25 @@ public abstract class AbstractDealExecution {
 					if (log.isInfoEnabled()) log.info("dischargeUnitId : " + dischargeUnitId_ + ", chargeUnitId : " + chargeUnitId_);
 					// Fetch the raw unit data of both units
 					// 両ユニットのユニットデータをナマ取得する
-					Future<JsonObject> dischargeUnitDataFuture = Future.future();
-					Future<JsonObject> chargeUnitDataFuture = Future.future();
-					unitData_(dischargeUnitId_, dischargeUnitDataFuture);
-					unitData_(chargeUnitId_, chargeUnitDataFuture);
-					CompositeFuture.<JsonObject, JsonObject>all(dischargeUnitDataFuture, chargeUnitDataFuture).setHandler(ar -> {
+					Promise<JsonObject> dischargeUnitDataPromise = Promise.promise();
+					Future<JsonObject> dischargeUnitDataFuture = dischargeUnitDataPromise.future();
+					Promise<JsonObject> chargeUnitDataPromise = Promise.promise();
+					Future<JsonObject> chargeUnitDataFuture = chargeUnitDataPromise.future();
+					unitData_(dischargeUnitId_, ar -> {
+						if (ar.succeeded()) {
+							dischargeUnitDataPromise.complete(ar.result());
+						} else {
+							dischargeUnitDataPromise.fail(ar.cause());
+						}
+					});
+					unitData_(chargeUnitId_, ar -> {
+						if (ar.succeeded()) {
+							chargeUnitDataPromise.complete(ar.result());
+						} else {
+							chargeUnitDataPromise.fail(ar.cause());
+						}
+					});
+					CompositeFuture.<JsonObject, JsonObject>all(dischargeUnitDataFuture, chargeUnitDataFuture).onComplete(ar -> {
 						if (ar.succeeded()) {
 							dischargeUnitData_ = ar.result().resultAt(0);
 							chargeUnitData_ = ar.result().resultAt(1);
@@ -441,7 +456,7 @@ public abstract class AbstractDealExecution {
 		DeliveryOptions options = new DeliveryOptions();
 		options.addHeader("gridMasterUnitId", ApisConfig.unitId());
 		options.addHeader("urgent", "true");
-		vertx_.eventBus().<JsonObject>send(ServiceAddress.Controller.unitData(unitId), null, options, rep -> {
+		vertx_.eventBus().<JsonObject>request(ServiceAddress.Controller.unitData(unitId), null, options, rep -> {
 			if (rep.succeeded()) {
 				completionHandler.handle(Future.succeededFuture(rep.result().body()));
 			} else {

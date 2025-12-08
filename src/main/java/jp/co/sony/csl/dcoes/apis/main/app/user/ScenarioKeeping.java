@@ -4,10 +4,11 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -111,7 +112,7 @@ public class ScenarioKeeping extends AbstractVerticle {
 	 * @param startFuture {@inheritDoc}
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void start(Future<Void> startFuture) throws Exception {
+	@Override public void start(Promise<Void> startPromise) throws Exception {
 		localFilePath_ = VertxConfig.config.getString("scenarioFile");
 		controlCenterEnabled_ = VertxConfig.config.getBoolean(Boolean.TRUE, "controlCenter", "enabled");
 		if (controlCenterEnabled_) {
@@ -133,9 +134,9 @@ public class ScenarioKeeping extends AbstractVerticle {
 					controlCenterAccessingTimerHandler_(0L);
 				}
 				if (log.isTraceEnabled()) log.trace("started : " + deploymentID());
-				startFuture.complete();
+				startPromise.complete();
 			} else {
-				startFuture.fail(resScenario.cause());
+				startPromise.fail(resScenario.cause());
 			}
 		});
 	}
@@ -149,9 +150,10 @@ public class ScenarioKeeping extends AbstractVerticle {
 	 * タイマを止めるためのフラグを立てる.
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void stop() throws Exception {
+	@Override public void stop(Promise<Void> stopPromise) throws Exception {
 		stopped_ = true;
 		if (log.isTraceEnabled()) log.trace("stopped : " + deploymentID());
+		stopPromise.complete();
 	}
 
 	////
@@ -277,7 +279,9 @@ public class ScenarioKeeping extends AbstractVerticle {
 					ErrorUtil.report(vertx, Error.Category.USER, Error.Extent.LOCAL, Error.Level.WARN, resRead.cause());
 				}
 			}
+			if (!stopped_) {
 			setLocalFileReadingTimer_();
+			}
 		});
 	}
 
@@ -322,7 +326,7 @@ public class ScenarioKeeping extends AbstractVerticle {
 			return;
 		}
 		DeliveryOptions options = new DeliveryOptions().addHeader("account", controlCenterAccount_).addHeader("password", controlCenterPassword_).addHeader("unitId", ApisConfig.unitId());
-		vertx.eventBus().<JsonObject>send(ServiceAddress.ControlCenterClient.scenario(), null, options, resScenario -> {
+		vertx.eventBus().<JsonObject>request(ServiceAddress.ControlCenterClient.scenario(), null, options, resScenario -> {
 			if (resScenario.succeeded()) {
 				// Keep in cache
 				// キャッシュしておく
@@ -330,7 +334,9 @@ public class ScenarioKeeping extends AbstractVerticle {
 			} else {
 				ErrorUtil.report(vertx, Error.Category.USER, Error.Extent.LOCAL, Error.Level.WARN, "Communication failed on EventBus", resScenario.cause());
 			}
+			if (!stopped_) {
 			setControlCenterAccessingTimer_();
+			}
 		});
 	}
 

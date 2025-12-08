@@ -7,8 +7,8 @@ import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -122,7 +122,7 @@ public class Scram extends AbstractErrorAction {
 					if (resScram.succeeded()) {
 						// Remove the interchange from shared memory
 						// 共有メモリから融通を削除する
-						vertx_.eventBus().send(ServiceAddress.Mediator.dealDisposition(), Deal.dealId(aDeal), repDealDisposition -> {
+						vertx_.eventBus().request(ServiceAddress.Mediator.dealDisposition(), Deal.dealId(aDeal), repDealDisposition -> {
 							if (repDealDisposition.succeeded()) {
 								// If successful, there is nothing to do
 								// 成功ならすることはない

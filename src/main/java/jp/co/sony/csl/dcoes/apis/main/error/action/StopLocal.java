@@ -6,8 +6,8 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import jp.co.sony.csl.dcoes.apis.common.Error;
 import jp.co.sony.csl.dcoes.apis.common.ServiceAddress;
 import jp.co.sony.csl.dcoes.apis.common.util.vertx.ReplyFailureUtil;
@@ -45,7 +45,7 @@ public class StopLocal extends AbstractErrorAction {
 	 */
 	@Override protected void doAction(Handler<AsyncResult<Void>> completionHandler) {
 		if (log.isInfoEnabled()) log.info("sending wait message to this unit ...");
-		vertx_.eventBus().send(ServiceAddress.Controller.stopLocal(), null, repStopLocal -> {
+		vertx_.eventBus().request(ServiceAddress.Controller.stopLocal(), null, repStopLocal -> {
 			if (repStopLocal.succeeded()) {
 				if (log.isInfoEnabled()) log.info("done");
 				completionHandler.handle(Future.succeededFuture());

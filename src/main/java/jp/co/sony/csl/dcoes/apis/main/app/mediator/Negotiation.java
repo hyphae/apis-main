@@ -7,12 +7,13 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import jp.co.sony.csl.dcoes.apis.common.Error;
 import jp.co.sony.csl.dcoes.apis.common.ServiceAddress;
 import jp.co.sony.csl.dcoes.apis.common.util.vertx.ReplyFailureUtil;
@@ -73,13 +74,13 @@ public class Negotiation extends AbstractVerticle {
 	 * @param startFuture {@inheritDoc}
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void start(Future<Void> startFuture) throws Exception {
+	@Override public void start(Promise<Void> startPromise) throws Exception {
 		startAcceptService_(resAccept -> {
 			if (resAccept.succeeded()) {
 				if (log.isTraceEnabled()) log.trace("started : " + deploymentID());
-				startFuture.complete();
+				startPromise.complete();
 			} else {
-				startFuture.fail(resAccept.cause());
+				startPromise.fail(resAccept.cause());
 			}
 		});
 	}
@@ -91,8 +92,9 @@ public class Negotiation extends AbstractVerticle {
 	 * 停止時に呼び出される.
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void stop() throws Exception {
+	@Override public void stop(Promise<Void> stopPromise) throws Exception {
 		if (log.isTraceEnabled()) log.trace("stopped : " + deploymentID());
+		stopPromise.complete();
 	}
 
 	////
@@ -185,7 +187,7 @@ public class Negotiation extends AbstractVerticle {
 		if (log.isDebugEnabled()) log.debug("accepts received : " + accepts);
 		if (accepts != null && ! accepts.isEmpty()) {
 			JsonObject values = new JsonObject().put("request", request_).put("accepts", new JsonArray(accepts));
-			vertx.eventBus().<JsonObject>send(ServiceAddress.User.mediatorAccepts(), values, repAccept -> {
+			vertx.eventBus().<JsonObject>request(ServiceAddress.User.mediatorAccepts(), values, repAccept -> {
 				if (repAccept.succeeded()) {
 					JsonObject accept = repAccept.result().body();
 					if (accept != null) {

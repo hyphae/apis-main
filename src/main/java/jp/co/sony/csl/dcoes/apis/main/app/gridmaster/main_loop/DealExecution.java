@@ -235,7 +235,7 @@ public class DealExecution {
 		// 前回の融通処理が終わった時刻を送る
 		// If data collection is performed after this time, the cached value is returned instead of collecting data again.
 		// この時刻より後にデータ収集が行われていれば新たにデータ収集しなおすことなくキャッシュ値が返ってくる
-		vertx.eventBus().<JsonObject>send(ServiceAddress.GridMaster.urgentUnitDatas(), lastDealExecutionMillis_, rep -> {
+		vertx.eventBus().<JsonObject>request(ServiceAddress.GridMaster.urgentUnitDatas(), lastDealExecutionMillis_, rep -> {
 			if (rep.succeeded()) {
 				// Keep in cache
 				// キャッシュしておく

@@ -4,9 +4,10 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.json.JsonArray;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -38,19 +39,19 @@ public class DataResponding extends AbstractVerticle {
 	 * @param startFuture {@inheritDoc}
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void start(Future<Void> startFuture) throws Exception {
+	@Override public void start(Promise<Void> startPromise) throws Exception {
 		startUnitIdsService_(resUnitIds -> {
 			if (resUnitIds.succeeded()) {
 				startUnitDatasService_(resUnitDatas -> {
 					if (resUnitDatas.succeeded()) {
 						if (log.isTraceEnabled()) log.trace("started : " + deploymentID());
-						startFuture.complete();
+						startPromise.complete();
 					} else {
-						startFuture.fail(resUnitDatas.cause());
+						startPromise.fail(resUnitDatas.cause());
 					}
 				});
 			} else {
-				startFuture.fail(resUnitIds.cause());
+				startPromise.fail(resUnitIds.cause());
 			}
 		});
 	}
@@ -62,8 +63,9 @@ public class DataResponding extends AbstractVerticle {
 	 * 停止時に呼び出される.
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void stop() throws Exception {
+	@Override public void stop(Promise<Void> stopPromise) throws Exception {
 		if (log.isTraceEnabled()) log.trace("stopped : " + deploymentID());
+		stopPromise.complete();
 	}
 
 	////

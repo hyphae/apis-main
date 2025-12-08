@@ -5,10 +5,11 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import jp.co.sony.csl.dcoes.apis.common.Deal;
 import jp.co.sony.csl.dcoes.apis.common.Error;
 import jp.co.sony.csl.dcoes.apis.common.ServiceAddress;
@@ -43,7 +44,7 @@ public class BatteryCapacityManagement extends AbstractVerticle {
 	 * @param startFuture {@inheritDoc}
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void start(Future<Void> startFuture) throws Exception {
+	@Override public void start(Promise<Void> startPromise) throws Exception {
 		if (log.isInfoEnabled()) log.info("batteryCapacityManagement : " + ApisConfig.isBatteryCapacityManagementEnabled());
 		startBatteryCapacityTestingService_(resBatteryCapacityTesting -> {
 			if (resBatteryCapacityTesting.succeeded()) {
@@ -54,21 +55,21 @@ public class BatteryCapacityManagement extends AbstractVerticle {
 								startResetAllService_(resResetAll -> {
 									if (resResetAll.succeeded()) {
 										if (log.isTraceEnabled()) log.trace("started : " + deploymentID());
-										startFuture.complete();
+										startPromise.complete();
 									} else {
-										startFuture.fail(resResetAll.cause());
+										startPromise.fail(resResetAll.cause());
 									}
 								});
 							} else {
-								startFuture.fail(resResetLocal.cause());
+								startPromise.fail(resResetLocal.cause());
 							}
 						});
 					} else {
-						startFuture.fail(resBatteryCapacityManaging.cause());
+						startPromise.fail(resBatteryCapacityManaging.cause());
 					}
 				});
 			} else {
-				startFuture.fail(resBatteryCapacityTesting.cause());
+				startPromise.fail(resBatteryCapacityTesting.cause());
 			}
 		});
 	}
@@ -80,8 +81,9 @@ public class BatteryCapacityManagement extends AbstractVerticle {
 	 * 停止時に呼び出される.
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void stop() throws Exception {
+	@Override public void stop(Promise<Void> stopPromise) throws Exception {
 		if (log.isTraceEnabled()) log.trace("stopped : " + deploymentID());
+		stopPromise.complete();
 	}
 
 	////
@@ -369,11 +371,25 @@ public class BatteryCapacityManagement extends AbstractVerticle {
 	 * @param message : 返信対象メッセージ
 	 */
 	private void doBatteryCapacityResetting_(Message<?> message) {
-		Future<Boolean> unlockDischargeFuture = Future.future();
-		Future<Boolean> unlockChargeFuture = Future.future();
-		FileSystemExclusiveLockUtil.unlock(vertx, lockName_(Deal.Direction.DISCHARGE), true, unlockDischargeFuture);
-		FileSystemExclusiveLockUtil.unlock(vertx, lockName_(Deal.Direction.CHARGE), true, unlockChargeFuture);
-		CompositeFuture.<Boolean, Boolean>all(unlockDischargeFuture, unlockChargeFuture).setHandler(ar -> {
+		Promise<Boolean> unlockDischargePromise = Promise.promise();
+		Future<Boolean> unlockDischargeFuture = unlockDischargePromise.future();
+		Promise<Boolean> unlockChargePromise = Promise.promise();
+		Future<Boolean> unlockChargeFuture = unlockChargePromise.future();
+		FileSystemExclusiveLockUtil.unlock(vertx, lockName_(Deal.Direction.DISCHARGE), true, ar -> {
+			if (ar.succeeded()) {
+				unlockDischargePromise.complete(ar.result());
+			} else {
+				unlockDischargePromise.fail(ar.cause());
+			}
+		});
+		FileSystemExclusiveLockUtil.unlock(vertx, lockName_(Deal.Direction.CHARGE), true, ar -> {
+			if (ar.succeeded()) {
+				unlockChargePromise.complete(ar.result());
+			} else {
+				unlockChargePromise.fail(ar.cause());
+			}
+		});
+		CompositeFuture.<Boolean, Boolean>all(unlockDischargeFuture, unlockChargeFuture).onComplete(ar -> {
 			FileSystemExclusiveLockUtil.resetExclusiveLock(vertx);
 			if (ar.succeeded()) {
 				message.reply(ApisConfig.unitId());

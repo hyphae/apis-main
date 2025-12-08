@@ -4,8 +4,9 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import io.vertx.core.Promise;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import jp.co.sony.csl.dcoes.apis.common.Error;
 import jp.co.sony.csl.dcoes.apis.common.ServiceAddress;
 import jp.co.sony.csl.dcoes.apis.main.app.gridmaster.main_loop.DealExecution;
@@ -61,7 +62,7 @@ public class GridMaster extends AbstractVerticle {
 	 * @param startFuture {@inheritDoc}
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void start(Future<Void> startFuture) throws Exception {
+	@Override public void start(Promise<Void> startPromise) throws Exception {
 		startGridMasterUndeploymentService_(resGridMasterUndeployment -> {
 			if (resGridMasterUndeployment.succeeded()) {
 				vertx.deployVerticle(new Helo(), resHelo -> {
@@ -75,29 +76,29 @@ public class GridMaster extends AbstractVerticle {
 													vertx.deployVerticle(new MainLoop(), resMainLoop -> {
 														if (resMainLoop.succeeded()) {
 															if (log.isTraceEnabled()) log.trace("started : " + deploymentID());
-															startFuture.complete();
+															startPromise.complete();
 														} else {
-															startFuture.fail(resMainLoop.cause());
+															startPromise.fail(resMainLoop.cause());
 														}
 													});
 												} else {
-													startFuture.fail(resDataResponding.cause());
+													startPromise.fail(resDataResponding.cause());
 												}
 											});
 									} else {
-										startFuture.fail(resDataCollection.cause());
+										startPromise.fail(resDataCollection.cause());
 									}
 								});
 							} else {
-								startFuture.fail(resErrorCollection.cause());
+								startPromise.fail(resErrorCollection.cause());
 							}
 						});
 					} else {
-						startFuture.fail(resHelo.cause());
+						startPromise.fail(resHelo.cause());
 					}
 				});
 			} else {
-				startFuture.fail(resGridMasterUndeployment.cause());
+				startPromise.fail(resGridMasterUndeployment.cause());
 			}
 		});
 	}
@@ -111,13 +112,14 @@ public class GridMaster extends AbstractVerticle {
 	 * 各種キャッシュをリセットする.
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void stop() throws Exception {
+	@Override public void stop(Promise<Void> stopPromise) throws Exception {
 		DealExecution.unitDataCache.reset();
 		DataCollection.cache.reset();
 		ErrorCollection.cache.reset();
 		GlobalDataCalculation.cache.reset();
 		GlobalSafetyEvaluation.errors.reset();
 		if (log.isTraceEnabled()) log.trace("stopped : " + deploymentID());
+		stopPromise.complete();
 	}
 
 	////

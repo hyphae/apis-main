@@ -4,11 +4,13 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.http.HttpClient;
+import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import jp.co.sony.csl.dcoes.apis.common.Error;
 import jp.co.sony.csl.dcoes.apis.common.ServiceAddress;
 import jp.co.sony.csl.dcoes.apis.common.util.vertx.JsonObjectUtil;
@@ -101,7 +103,7 @@ public abstract class DeviceControlling extends AbstractVerticle {
 	 * @param startFuture {@inheritDoc}
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void start(Future<Void> startFuture) throws Exception {
+	@Override public void start(Promise<Void> startPromise) throws Exception {
 		init(resInit -> {
 			if (resInit.succeeded()) {
 				startLocalStopService_(resLocalStop -> {
@@ -111,21 +113,21 @@ public abstract class DeviceControlling extends AbstractVerticle {
 								startDeviceControllingService_(resDeviceControlling -> {
 									if (resDeviceControlling.succeeded()) {
 										if (log.isTraceEnabled()) log.trace("started : " + deploymentID());
-										startFuture.complete();
+										startPromise.complete();
 									} else {
-										startFuture.fail(resDeviceControlling.cause());
+										startPromise.fail(resDeviceControlling.cause());
 									}
 								});
 							} else {
-								startFuture.fail(resScram.cause());
+								startPromise.fail(resScram.cause());
 							}
 						});
 					} else {
-						startFuture.fail(resLocalStop.cause());
+						startPromise.fail(resLocalStop.cause());
 					}
 				});
 			} else {
-				startFuture.fail(resInit.cause());
+				startPromise.fail(resInit.cause());
 			}
 		});
 	}
@@ -139,8 +141,8 @@ public abstract class DeviceControlling extends AbstractVerticle {
 	 * 自ユニットのデバイスを停止する.
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void stop(Future<Void> stopFuture) throws Exception {
-		vertx.eventBus().send(ServiceAddress.Controller.stopLocal(), null, repStopLocal -> {
+	@Override public void stop(Promise<Void> stopPromise) throws Exception {
+		vertx.eventBus().request(ServiceAddress.Controller.stopLocal(), null, repStopLocal -> {
 			if (repStopLocal.succeeded()) {
 				// nop
 			} else {
@@ -151,7 +153,7 @@ public abstract class DeviceControlling extends AbstractVerticle {
 				}
 			}
 			if (log.isTraceEnabled()) log.trace("stopped : " + deploymentID());
-			stopFuture.complete();
+			stopPromise.complete();
 		});
 	}
 
@@ -541,27 +543,27 @@ public abstract class DeviceControlling extends AbstractVerticle {
 		 * once the project upgrades to a newer Vert.x version (3.6+ or 4.x) where
 		 * WebClient is available.
 		 */
-		@SuppressWarnings("deprecation")
 		private void send_(HttpClient client, String uri, Handler<AsyncResult<JsonObject>> completionHandler) {
 			if (log.isInfoEnabled()) log.info("uri : " + uri);
 			Long requestTimeoutMsec = PolicyKeeping.cache().getLong(DEFAULT_REQUEST_TIMEOUT_MSEC, "controller", "requestTimeoutMsec");
-			client.get(uri, resGet -> {
-				if (200 == resGet.statusCode()) {
-					resGet.bodyHandler(body -> {
-						JsonObjectUtil.toJsonObject(body, completionHandler);
-					}).exceptionHandler(t -> {
-						completionHandler.handle(Future.failedFuture(t));
-					});
-				} else {
-					resGet.bodyHandler(error -> {
-						completionHandler.handle(Future.failedFuture("http request failed : " + resGet.statusCode() + " : " + resGet.statusMessage() + " : " + error));
-					}).exceptionHandler(t -> {
-						completionHandler.handle(Future.failedFuture("http request failed : " + resGet.statusCode() + " : " + resGet.statusMessage() + " : " + t));
-					});
-				}
-			}).setTimeout(requestTimeoutMsec).exceptionHandler(t -> {
-				completionHandler.handle(Future.failedFuture(t));
-			}).end();
+			client.request(HttpMethod.GET, uri)
+				.compose(request -> request.send())
+				.onSuccess(response -> {
+					if (response.statusCode() == 200) {
+						response.body()
+							.onSuccess(body -> {
+								JsonObjectUtil.toJsonObject(body, completionHandler);
+							})
+							.onFailure(t -> completionHandler.handle(Future.failedFuture(t)));
+					} else {
+						response.body()
+							.onSuccess(error -> {
+								completionHandler.handle(Future.failedFuture("http request failed : " + response.statusCode() + " : " + response.statusMessage() + " : " + error));
+							})
+							.onFailure(t -> completionHandler.handle(Future.failedFuture("http request failed : " + response.statusCode() + " : " + response.statusMessage() + " : " + t)));
+					}
+				})
+				.onFailure(t -> completionHandler.handle(Future.failedFuture(t)));
 		}
 	}
 

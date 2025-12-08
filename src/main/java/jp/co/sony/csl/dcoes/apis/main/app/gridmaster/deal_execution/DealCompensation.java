@@ -4,6 +4,7 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
@@ -184,11 +185,25 @@ public class DealCompensation extends AbstractDealExecution {
 	private void saveCompensatedGridCurrentA_(Handler<AsyncResult<Void>> completionHandler) {
 		// Acquire the device control state of units on both sides
 		// 両側ユニットのデバイス制御状態を取得する
-		Future<Void> dischargeFuture = Future.future();
-		Future<Void> chargeFuture = Future.future();
-		updateUnitDcdcStatus_(dischargeUnitId_, dischargeFuture);
-		updateUnitDcdcStatus_(chargeUnitId_, chargeFuture);
-		CompositeFuture.<Void, Void>all(dischargeFuture, chargeFuture).setHandler(ar -> {
+		Promise<Void> dischargePromise = Promise.promise();
+		Future<Void> dischargeFuture = dischargePromise.future();
+		Promise<Void> chargePromise = Promise.promise();
+		Future<Void> chargeFuture = chargePromise.future();
+		updateUnitDcdcStatus_(dischargeUnitId_, ar -> {
+			if (ar.succeeded()) {
+				dischargePromise.complete();
+			} else {
+				dischargePromise.fail(ar.cause());
+			}
+		});
+		updateUnitDcdcStatus_(chargeUnitId_, ar -> {
+			if (ar.succeeded()) {
+				chargePromise.complete();
+			} else {
+				chargePromise.fail(ar.cause());
+			}
+		});
+		CompositeFuture.<Void, Void>all(dischargeFuture, chargeFuture).onComplete(ar -> {
 			if (ar.succeeded()) {
 				// Obtain grid current measurements for units at both ends
 				// 両端ユニットのグリッド電流測定値を取得する

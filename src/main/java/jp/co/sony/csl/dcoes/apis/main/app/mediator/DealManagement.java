@@ -7,13 +7,14 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 //import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import jp.co.sony.csl.dcoes.apis.common.Deal;
 import jp.co.sony.csl.dcoes.apis.common.Error;
 import jp.co.sony.csl.dcoes.apis.common.ServiceAddress;
@@ -65,7 +66,7 @@ public class DealManagement extends AbstractVerticle {
 	 * @param startFuture {@inheritDoc}
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void start(Future<Void> startFuture) throws Exception {
+	@Override public void start(Promise<Void> startPromise) throws Exception {
 		startDealsService_(resDeals -> {
 			if (resDeals.succeeded()) {
 				startDealCreationService_(resDealCreation -> {
@@ -79,29 +80,29 @@ public class DealManagement extends AbstractVerticle {
 												startResetAllService_(resResetAll -> {
 													if (resResetAll.succeeded()) {
 														if (log.isTraceEnabled()) log.trace("started : " + deploymentID());
-														startFuture.complete();
+														startPromise.complete();
 													} else {
-														startFuture.fail(resResetAll.cause());
+														startPromise.fail(resResetAll.cause());
 													}
 												});
 											} else {
-												startFuture.fail(resResetLocal.cause());
+												startPromise.fail(resResetLocal.cause());
 											}
 										});
 									} else {
-										startFuture.fail(resDealNeedToStop.cause());
+										startPromise.fail(resDealNeedToStop.cause());
 									}
 								});
 							} else {
-								startFuture.fail(resDealDisposition.cause());
+								startPromise.fail(resDealDisposition.cause());
 							}
 						});
 					} else {
-						startFuture.fail(resDealCreation.cause());
+						startPromise.fail(resDealCreation.cause());
 					}
 				});
 			} else {
-				startFuture.fail(resDeals.cause());
+				startPromise.fail(resDeals.cause());
 			}
 		});
 	}
@@ -113,8 +114,9 @@ public class DealManagement extends AbstractVerticle {
 	 * 停止時に呼び出される.
 	 * @throws Exception {@inheritDoc}
 	 */
-	@Override public void stop() throws Exception {
+	@Override public void stop(Promise<Void> stopPromise) throws Exception {
 		if (log.isTraceEnabled()) log.trace("stopped : " + deploymentID());
+		stopPromise.complete();
 	}
 
 	////
@@ -184,7 +186,7 @@ public class DealManagement extends AbstractVerticle {
 				String acceptUnitId = Deal.acceptUnitId(deal);
 				if (requestUnitId != null && acceptUnitId != null) {
 					if (PolicyKeeping.isMember(requestUnitId) && PolicyKeeping.isMember(acceptUnitId)) {
-						vertx.eventBus().<Boolean>send(ServiceAddress.GridMaster.errorTesting(), null, repGlobalErrors -> {
+						vertx.eventBus().<Boolean>request(ServiceAddress.GridMaster.errorTesting(), null, repGlobalErrors -> {
 							if (repGlobalErrors.succeeded()) {
 								Boolean hasGlobalErrors = repGlobalErrors.result().body();
 								if (hasGlobalErrors != null && hasGlobalErrors) {
@@ -194,11 +196,25 @@ public class DealManagement extends AbstractVerticle {
 									if (log.isInfoEnabled()) log.info(msg);
 									req.fail(-1, msg);
 								} else {
-									Future<Message<Boolean>> requestUnitFuture = Future.future();
-									Future<Message<Boolean>> acceptUnitFuture = Future.future();
-									vertx.eventBus().<Boolean>send(ServiceAddress.User.errorTesting(requestUnitId), null, requestUnitFuture);
-									vertx.eventBus().<Boolean>send(ServiceAddress.User.errorTesting(acceptUnitId), null, acceptUnitFuture);
-									CompositeFuture.<Message<Boolean>, Message<Boolean>>all(requestUnitFuture, acceptUnitFuture).setHandler(ar -> {
+									Promise<Message<Boolean>> requestUnitPromise = Promise.promise();
+									Future<Message<Boolean>> requestUnitFuture = requestUnitPromise.future();
+									Promise<Message<Boolean>> acceptUnitPromise = Promise.promise();
+									Future<Message<Boolean>> acceptUnitFuture = acceptUnitPromise.future();
+									vertx.eventBus().<Boolean>request(ServiceAddress.User.errorTesting(requestUnitId), null, ar -> {
+										if (ar.succeeded()) {
+											requestUnitPromise.complete(ar.result());
+										} else {
+											requestUnitPromise.fail(ar.cause());
+										}
+									});
+									vertx.eventBus().<Boolean>request(ServiceAddress.User.errorTesting(acceptUnitId), null, ar -> {
+										if (ar.succeeded()) {
+											acceptUnitPromise.complete(ar.result());
+										} else {
+											acceptUnitPromise.fail(ar.cause());
+										}
+									});
+									CompositeFuture.<Message<Boolean>, Message<Boolean>>all(requestUnitFuture, acceptUnitFuture).onComplete(ar -> {
 										if (ar.succeeded()) {
 											Boolean hasRequestUnitErrors = ar.result().<Message<Boolean>>resultAt(0).body();
 											Boolean hasAcceptUnitErrors = ar.result().<Message<Boolean>>resultAt(1).body();
@@ -347,7 +363,7 @@ public class DealManagement extends AbstractVerticle {
 	private void acquireInterlock_(String unitId, JsonObject deal, Handler<AsyncResult<Void>> completionHandler) {
 		if (unitId != null) {
 			DeliveryOptions acquireOptions = new DeliveryOptions().addHeader("command", "acquire");
-			vertx.eventBus().<Void>send(ServiceAddress.Mediator.dealInterlocking(unitId), deal, acquireOptions, rep -> {
+			vertx.eventBus().<Void>request(ServiceAddress.Mediator.dealInterlocking(unitId), deal, acquireOptions, rep -> {
 				if (rep.succeeded()) {
 					completionHandler.handle(Future.succeededFuture());
 				} else {
@@ -365,7 +381,7 @@ public class DealManagement extends AbstractVerticle {
 	private void releaseInterlock_(String unitId, JsonObject deal, Handler<AsyncResult<Void>> completionHandler) {
 		if (unitId != null) {
 			DeliveryOptions releaseOptions = new DeliveryOptions().addHeader("command", "release");
-			vertx.eventBus().<Void>send(ServiceAddress.Mediator.dealInterlocking(unitId), deal, releaseOptions, rep -> {
+			vertx.eventBus().<Void>request(ServiceAddress.Mediator.dealInterlocking(unitId), deal, releaseOptions, rep -> {
 				if (rep.succeeded()) {
 					completionHandler.handle(Future.succeededFuture());
 				} else {
