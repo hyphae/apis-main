@@ -42,6 +42,9 @@ jobs:
             exit 1
           fi
           echo "✓ apis-bom:3.0.0 successfully installed"
+          # Clear Maven metadata cache to force it to check local repo
+          rm -rf ~/.m2/repository/jp/co/sony/csl/dcoes/apis/apis-bom/3.0.0/_remote.repositories 2>/dev/null || true
+          rm -rf ~/.m2/repository/jp/co/sony/csl/dcoes/apis/apis-bom/maven-metadata-local.xml 2>/dev/null || true
 
       - name: 2. Clone and Install apis-common
         working-directory: ${{ github.workspace }}
@@ -55,5 +58,9 @@ jobs:
           echo "Current directory: $(pwd)"
           echo "Verifying apis-bom:3.0.0 is available..."
           ls -la ~/.m2/repository/jp/co/sony/csl/dcoes/apis/apis-bom/3.0.0/ || echo "Warning: apis-bom:3.0.0 not found"
+          # Test if Maven can resolve apis-bom:3.0.0
+          echo "Testing Maven resolution of apis-bom:3.0.0..."
+          mvn dependency:get -Dartifact=jp.co.sony.csl.dcoes.apis:apis-bom:3.0.0:pom -DremoteRepositories= || echo "Note: dependency:get may fail, but local repo should work"
           echo "Building apis-main..."
-          mvn -B clean verify
+          # Used -U to force Maven to update and check local repository
+          mvn -B -U clean verify
