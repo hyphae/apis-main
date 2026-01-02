@@ -46,6 +46,16 @@ jobs:
         run: |
           git clone https://github.com/hyphae/apis-bom.git ../apis-bom
           mvn -B -f ../apis-bom/pom.xml clean install -DskipTests=true -Dmaven.test.failure.ignore=true
+          # Install apis-bom as version 3.0.0 (apis-common requires this version)
+          echo "Installing apis-bom as version 3.0.0..."
+          cd ../apis-bom
+          mvn install:install-file -Dfile=pom.xml -DgroupId=jp.co.sony.csl.dcoes.apis -DartifactId=apis-bom -Dversion=3.0.0 -Dpackaging=pom || (echo "ERROR: Failed to install apis-bom:3.0.0" && exit 1)
+          echo "Verifying installation..."
+          if [ ! -f ~/.m2/repository/jp/co/sony/csl/dcoes/apis/apis-bom/3.0.0/apis-bom-3.0.0.pom ]; then
+            echo "ERROR: apis-bom:3.0.0 not found in local repository!"
+            exit 1
+          fi
+          echo "✓ apis-bom:3.0.0 successfully installed"
 
       - name: 2. Clone and Install apis-common
         run: |
