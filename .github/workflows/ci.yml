@@ -28,6 +28,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y groovy
 
       - name: 1. Clone and Install apis-bom
+        working-directory: ${{ github.workspace }}
         run: |
           git clone https://github.com/hyphae/apis-bom.git ../apis-bom
           mvn -B -f ../apis-bom/pom.xml clean install -DskipTests=true -Dmaven.test.failure.ignore=true
@@ -43,9 +44,16 @@ jobs:
           echo "✓ apis-bom:3.0.0 successfully installed"
 
       - name: 2. Clone and Install apis-common
+        working-directory: ${{ github.workspace }}
         run: |
           git clone https://github.com/hyphae/apis-common.git ../apis-common
           mvn -B -f ../apis-common/pom.xml clean install -DskipTests=true -Dmaven.test.failure.ignore=true
 
       - name: 3. Build and Test apis-main
-        run: mvn -B clean verify
+        working-directory: ${{ github.workspace }}
+        run: |
+          echo "Current directory: $(pwd)"
+          echo "Verifying apis-bom:3.0.0 is available..."
+          ls -la ~/.m2/repository/jp/co/sony/csl/dcoes/apis/apis-bom/3.0.0/ || echo "Warning: apis-bom:3.0.0 not found"
+          echo "Building apis-main..."
+          mvn -B clean verify
