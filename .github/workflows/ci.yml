@@ -31,6 +31,8 @@ jobs:
         run: |
           git clone https://github.com/hyphae/apis-bom.git ../apis-bom
           mvn -B -f ../apis-bom/pom.xml clean install -DskipTests=true -Dmaven.test.failure.ignore=true
+          # Install apis-bom as version 3.0.0 (apis-common requires this version)
+          mvn install:install-file -Dfile=../apis-bom/pom.xml -DgroupId=jp.co.sony.csl.dcoes.apis -DartifactId=apis-bom -Dversion=3.0.0 -Dpackaging=pom
 
       - name: 2. Clone and Install apis-common
         run: |
