@@ -1,5 +1,7 @@
 # apis-main
 
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/hyphae/apis-main/badge)](https://scorecard.dev/viewer/?uri=github.com/hyphae/apis-main)
+
 ## Introduction
 apis-main is the name of energy sharing software for autonomous distributed control of energy developed by Sony CSL. apis-main is installed in each node (battery system connected to the DC grid via a bidirectional DC/DC converter). Via the Device Driver, the software periodically obtains the remaining capacity of the battery and automatically carries out energy sharing between nodes by nagotiating with other apis-mains in accordance with behavior rulesets determined by each node’s remaining battery capacity. Negotiations between apis-mains use a communication line such as Ethernet, and the energy sharing takes place with direct current on the DC grid. apis-main does not rely on software that carries out centralized control of nodes. All nodes have the same software, apis-main, and autonomous distributed control is carried out with only apis-main in each node.  
 
