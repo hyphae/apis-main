@@ -372,7 +372,7 @@ public class Interlocking extends AbstractVerticle {
 					completionHandler.handle(Future.succeededFuture());
 				}
 			} else {
-				ErrorExceptionUtil.reportIfNeed(vertx, resDeals.cause());
+				ErrorExceptionUtil.reportIfNeedAndFail(vertx, resDeals.cause(), completionHandler);
 			}
 		});
 	}
