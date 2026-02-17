@@ -1,127 +1,120 @@
 {
-	"#" : "place this file at the path defined by 'policyFile' in config file",
-
-	"refreshingPeriodMsec" : 5000,
-
-	"operationMode" : "stop",
-
-	"memberUnitIds" : ["E001","E002","E003","E004"],
-
-	"largeCapacityUnitIds" : ["E001"],
-
-	"operationGridVoltageV" : 350,
-	"operationGridVoltageVRange" : {
-		"min" : 300,
-		"max" : 380
+	"#": "place this file at the path defined by 'policyFile' in config file",
+	"refreshingPeriodMsec": 5000,
+	"operationMode": "autonomous",
+	"memberUnitIds": [
+		"E001",
+		"E002",
+		"E003",
+		"E004"
+	],
+	"largeCapacityUnitIds": [
+		"E001"
+	],
+	"operationGridVoltageV": 350,
+	"operationGridVoltageVRange": {
+		"min": 300,
+		"max": 380
 	},
-	"gridVoltageSeparationV" : 10,
-	"gridVoltageAllowanceV" : 4,
-	"gridVoltageDropAllowanceV" : 20,
-	"gridCurrentStepA" : 1,
-	"gridUvloMaskV" : 10,
-
-	"safety" : {
-		"sumOfDealingUnitGridCurrentAllowancePerUnitA" : 0.125,
-		"sumOfDealGridCurrentMaxA" : 100,
-		"gridTopologyBasedEvaluation" : {
-			"enabled" : false,
-			"branchIds" : [],
-			"branchAssociation" : {
-			
-				"" : ""
+	"gridVoltageSeparationV": 10,
+	"gridVoltageAllowanceV": 4,
+	"gridVoltageDropAllowanceV": 20,
+	"gridCurrentStepA": 1,
+	"gridUvloMaskV": 10,
+	"safety": {
+		"sumOfDealingUnitGridCurrentAllowancePerUnitA": 0.125,
+		"sumOfDealGridCurrentMaxA": 100,
+		"gridTopologyBasedEvaluation": {
+			"enabled": false,
+			"branchIds": [],
+			"branchAssociation": {
+				"": ""
 			},
-			"branchCurrentCapacityA" : {
-			
-				"" : ""
+			"branchCurrentCapacityA": {
+				"": ""
 			}
 		}
 	},
-
-	"heloPeriodMsec" : 5000,
-
-	"controller" : {
-		"dcdc" : {
-			"checkpoint" : {
-				"retryLimit" : 3,
-				"retryWaitMsec" : 100
+	"heloPeriodMsec": 5000,
+	"controller": {
+		"dcdc": {
+			"checkpoint": {
+				"retryLimit": 3,
+				"retryWaitMsec": 100
 			},
-			"voltageReference" : {
-				"rampUp" : {
-					"first" : {
-						"timeoutMsec" : 180000
+			"voltageReference": {
+				"rampUp": {
+					"first": {
+						"timeoutMsec": 180000
 					}
 				},
-				"authorization" : {
-					"numberOfTrials" : 3
+				"authorization": {
+					"numberOfTrials": 3
 				}
 			}
 		},
-		"scramVoltageReferenceDelayMsec" : 5000,
-		"stopMeTimeoutMsec" : 60000,
-		"stopMeCheckPeriodMsec" : 1000,
-		"dataAcquisitionPeriodMsec" : 5000,
-		"requestTimeoutMsec" : 5000,
-		"retryLimit" : 3
+		"scramVoltageReferenceDelayMsec": 5000,
+		"stopMeTimeoutMsec": 60000,
+		"stopMeCheckPeriodMsec": 1000,
+		"dataAcquisitionPeriodMsec": 5000,
+		"requestTimeoutMsec": 5000,
+		"retryLimit": 3
 	},
-
-	"user" : {
-		"errorHandlingPeriodMsec" : 1000,
-		"errorSustainingMsec" : 30000,
-		"houseKeepingPeriodMsec" : 5000
+	"user": {
+		"errorHandlingPeriodMsec": 1000,
+		"errorSustainingMsec": 30000,
+		"houseKeepingPeriodMsec": 5000
 	},
-
-	"mediator" : {
-		"deal" : {
-			"gridCurrentA" : 1,
-			"amountMinWh" : 50,
-			"amountMaxWh" : 50,
-			"amountUnitWh" : 50
+	"mediator": {
+		"deal": {
+			"gridCurrentA": 1,
+			"amountMinWh": 50,
+			"amountMaxWh": 50,
+			"amountUnitWh": 50
 		},
-		"negotiationTimeoutMsec" : 2000,
-		"dealLoggingPeriodMsec" : 5000
+		"negotiationTimeoutMsec": 2000,
+		"dealLoggingPeriodMsec": 5000
 	},
-
-	"gridMaster" : {
-		"voltageReferenceSide" : "chargeUnit",
-		"voltageReferenceTakeOverDvg" : "theoretical",
-		"masterDealSelection" : {
-			"strategy" : "newestDeal"
+	"gridMaster": {
+		"voltageReferenceSide": "chargeUnit",
+		"voltageReferenceTakeOverDvg": "theoretical",
+		"masterDealSelection": {
+			"strategy": "newestDeal"
 		},
-		"gridMasterSelection" : {
-			"strategy" : "voltageReferenceUnit",
-			"fixedUnitId" : "Exxx"
+		"gridMasterSelection": {
+			"strategy": "voltageReferenceUnit",
+			"fixedUnitId": "Exxx"
 		},
-		"gridMasterEnsuring" : {
-			"interlockInconsistency" : {
-				"retryWaitMsec" : 2000
+		"gridMasterEnsuring": {
+			"interlockInconsistency": {
+				"retryWaitMsec": 2000
 			}
 		},
-		"gridMasterWatching" : {
-			"absence" : {
-				"ensureWaitMsec" : 5000
+		"gridMasterWatching": {
+			"absence": {
+				"ensureWaitMsec": 5000
 			}
 		},
-		"deal" : {
-			"forceStopCondition" : {
-				"dischargeUnitLowerLimitRsoc" : 20,
-				"chargeUnitUpperLimitRsoc" : 95
+		"deal": {
+			"forceStopCondition": {
+				"dischargeUnitLowerLimitRsoc": 20,
+				"chargeUnitUpperLimitRsoc": 95
 			},
-			"referenceSide" : "chargeUnit",
-			"resetLimit" : 3
+			"referenceSide": "chargeUnit",
+			"resetLimit": 3
 		},
-		"currentCompensation" : {
-			"limitOfTrials" : 3,
-			"driftAllowanceA" : 0.03
+		"currentCompensation": {
+			"limitOfTrials": 3,
+			"driftAllowanceA": 0.03
 		},
-		"gridVoltageOptimization" : {
-			"enabled" : false
+		"gridVoltageOptimization": {
+			"enabled": false
 		},
-		"heloPeriodMsec" : 5000,
-		"dataCollectionPeriodMsec" : 5000,
-		"dataCollectionTimeoutMsec" : 2000,
-		"mainLoopPeriodMsec" : 5000,
-		"errorSustainingMsec" : 30000
+		"heloPeriodMsec": 5000,
+		"dataCollectionPeriodMsec": 5000,
+		"dataCollectionTimeoutMsec": 2000,
+		"mainLoopPeriodMsec": 5000,
+		"errorSustainingMsec": 30000
 	},
-
-	"#" : "end"
+	"#": "end"
 }

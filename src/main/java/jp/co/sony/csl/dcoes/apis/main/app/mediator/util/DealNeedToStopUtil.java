@@ -9,8 +9,8 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import jp.co.sony.csl.dcoes.apis.common.Deal;
 import jp.co.sony.csl.dcoes.apis.common.Error;
 import jp.co.sony.csl.dcoes.apis.common.ErrorException;
@@ -44,51 +44,51 @@ public class DealNeedToStopUtil {
 	 * @param vertx a vertx object
 	 * @param dealId an interchange ID
 	 * @param reasons a list of reasons
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 *          
 	 * {@code dealId} で指定された DEAL に対する停止要求を記録する.
 	 * @param vertx vertx オブジェクト
 	 * @param dealId 融通 ID
 	 * @param reasons 理由リスト
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 */
-	public static void add(Vertx vertx, String dealId, JsonArray reasons, Handler<AsyncResult<Void>> completionHandler) {
+	public static void add(Vertx vertx, String dealId, JsonArray reasons, Handler<AsyncResult<Void>> onComplete) {
 		if (dealId != null && reasons != null) {
 			// Try to save in shared memory
 			// 共有メモリに保存しようとする
 			add_(vertx, dealId, reasons, res -> {
 				if (res.succeeded()) {
-					completionHandler.handle(Future.succeededFuture());
+					onComplete.handle(Future.succeededFuture());
 				} else {
 					// If that doesn't work
 					// 失敗しても
 					if (res.cause() instanceof ErrorException) {
 						// Fail if there is a serious error
 						// 何かヤバいエラーなら失敗とする
-						completionHandler.handle(res);
+						onComplete.handle(res);
 					} else {
 						// Looks like it failed due to detection of a cross overwrite, so try again
 						// クロス上書きを検知して失敗したようなので再試行
 						add_(vertx, dealId, reasons, res2 -> {
 							if (res2.succeeded()) {
-								completionHandler.handle(Future.succeededFuture());
+								onComplete.handle(Future.succeededFuture());
 							} else {
 								// If it still doesn't work
 								// また失敗しても
 								if (res2.cause() instanceof ErrorException) {
 									// Fail if there is a serious error
 									// 何かヤバいエラーなら失敗とする
-									completionHandler.handle(res2);
+									onComplete.handle(res2);
 								} else {
 									// Looks like it failed due to detection of a cross overwrite, so keep trying
 									// クロス上書きを検知して失敗したようなので再々試行
 									add_(vertx, dealId, reasons, res3 -> {
 										if (res3.succeeded()) {
-											completionHandler.handle(Future.succeededFuture());
+											onComplete.handle(Future.succeededFuture());
 										} else {
 											// Give up
 											// あきらめる
-											completionHandler.handle(res3);
+											onComplete.handle(res3);
 										};
 									});
 								}
@@ -98,10 +98,10 @@ public class DealNeedToStopUtil {
 				};
 			});
 		} else {
-			ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, "DealNeedToStopUtil.add(); no dealId and/or reasons ; dealId : " + dealId + " , reasons : " + reasons, completionHandler);
+			ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, "DealNeedToStopUtil.add(); no dealId and/or reasons ; dealId : " + dealId + " , reasons : " + reasons, onComplete);
 		}
 	}
-	private static void add_(Vertx vertx, String dealId, JsonArray reasons, Handler<AsyncResult<Void>> completionHandler) {
+	private static void add_(Vertx vertx, String dealId, JsonArray reasons, Handler<AsyncResult<Void>> onComplete) {
 		EncryptedClusterWideMapUtil.<String, JsonArray>getEncryptedClusterWideMap(vertx, MAP_NAME, resMap -> {
 			if (resMap.succeeded()) {
 				resMap.result().get(dealId, resGet -> {
@@ -139,15 +139,15 @@ public class DealNeedToStopUtil {
 										// Successful replacement → OK
 										// 差し替え成功 → OK
 										if (log.isDebugEnabled()) log.debug("needToStop added with dealId : " + dealId);
-										completionHandler.handle(Future.succeededFuture());
+										onComplete.handle(Future.succeededFuture());
 									} else {
 										// Replacement failed because the old value has changed → Must have been added during this process → NG
 										// old の値が変わっていたので差し替え失敗 → この処理中に追加されたに違いない → NG
 										String msg = "DealNeedToStopUtil.add_(); failed to replace with dealId : " + dealId;
-										completionHandler.handle(Future.failedFuture(msg));
+										onComplete.handle(Future.failedFuture(msg));
 									}
 								} else {
-									ErrorExceptionUtil.logAndFail(Error.Category.FRAMEWORK, Error.Extent.GLOBAL, Error.Level.ERROR, "Communication failed on SharedData", resReplaceIfPresent.cause(), completionHandler);
+									ErrorExceptionUtil.logAndFail(Error.Category.FRAMEWORK, Error.Extent.GLOBAL, Error.Level.ERROR, "Communication failed on SharedData", resReplaceIfPresent.cause(), onComplete);
 								}
 							});
 						} else {
@@ -162,42 +162,42 @@ public class DealNeedToStopUtil {
 										// Saved successfully → OK
 										// 保存成功 → OK
 										if (log.isDebugEnabled()) log.debug("needToStop added with dealId : " + dealId);
-										completionHandler.handle(Future.succeededFuture());
+										onComplete.handle(Future.succeededFuture());
 									} else {
 										// Save failed → Found a value that should not have been there originally → Must have been added during this process → NG
 										// 保存失敗 → もともとなかったはずなのにあった → この処理中に追加されたに違いない → NG
 										String msg = "DealNeedToStopUtil.add_(); failed to put with dealId : " + dealId;
-										completionHandler.handle(Future.failedFuture(msg));
+										onComplete.handle(Future.failedFuture(msg));
 									}
 								} else {
-									ErrorExceptionUtil.logAndFail(Error.Category.FRAMEWORK, Error.Extent.GLOBAL, Error.Level.ERROR, "Communication failed on SharedData", resPutIfAbsent.cause(), completionHandler);
+									ErrorExceptionUtil.logAndFail(Error.Category.FRAMEWORK, Error.Extent.GLOBAL, Error.Level.ERROR, "Communication failed on SharedData", resPutIfAbsent.cause(), onComplete);
 								}
 							});
 						}
 					} else {
-						ErrorExceptionUtil.logAndFail(Error.Category.FRAMEWORK, Error.Extent.GLOBAL, Error.Level.ERROR, "Communication failed on SharedData", resGet.cause(), completionHandler);
+						ErrorExceptionUtil.logAndFail(Error.Category.FRAMEWORK, Error.Extent.GLOBAL, Error.Level.ERROR, "Communication failed on SharedData", resGet.cause(), onComplete);
 					}
 				});
 			} else {
-				ErrorExceptionUtil.logAndFail(Error.Category.FRAMEWORK, Error.Extent.GLOBAL, Error.Level.ERROR, "Communication failed on SharedData", resMap.cause(), completionHandler);
+				ErrorExceptionUtil.logAndFail(Error.Category.FRAMEWORK, Error.Extent.GLOBAL, Error.Level.ERROR, "Communication failed on SharedData", resMap.cause(), onComplete);
 			}
 		});
 	}
 
 	/**
 	 * Delete the stop request for the DEAL specified by {@code dealId}.
-	 * The deleted information is received by the {@link AsyncResult#result()} method of completionHandler.
+	 * The deleted information is received by the {@link AsyncResult#result()} method of onComplete.
 	 * @param vertx a vertx object
 	 * @param dealId an interchange ID
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 *          
 	 * {@code dealId} で指定された DEAL に対する停止要求を削除する.
-	 * completionHandler の {@link AsyncResult#result()} で削除した情報を受け取る.
+	 * onComplete の {@link AsyncResult#result()} で削除した情報を受け取る.
 	 * @param vertx vertx オブジェクト
 	 * @param dealId 融通 ID
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 */
-	public static void remove(Vertx vertx, String dealId, Handler<AsyncResult<JsonArray>> completionHandler) {
+	public static void remove(Vertx vertx, String dealId, Handler<AsyncResult<JsonArray>> onComplete) {
 		EncryptedClusterWideMapUtil.<String, JsonArray>getEncryptedClusterWideMap(vertx, MAP_NAME, resMap -> {
 			if (resMap.succeeded()) {
 				resMap.result().remove(dealId, resRemove -> {
@@ -207,13 +207,13 @@ public class DealNeedToStopUtil {
 						} else {
 							if (log.isDebugEnabled()) log.debug("no needToStop with dealId : " + dealId);
 						}
-						completionHandler.handle(resRemove);
+						onComplete.handle(resRemove);
 					} else {
-						ErrorExceptionUtil.logAndFail(Error.Category.FRAMEWORK, Error.Extent.GLOBAL, Error.Level.ERROR, "Communication failed on SharedData", resRemove.cause(), completionHandler);
+						ErrorExceptionUtil.logAndFail(Error.Category.FRAMEWORK, Error.Extent.GLOBAL, Error.Level.ERROR, "Communication failed on SharedData", resRemove.cause(), onComplete);
 					}
 				});
 			} else {
-				ErrorExceptionUtil.logAndFail(Error.Category.FRAMEWORK, Error.Extent.GLOBAL, Error.Level.ERROR, "Communication failed on SharedData", resMap.cause(), completionHandler);
+				ErrorExceptionUtil.logAndFail(Error.Category.FRAMEWORK, Error.Extent.GLOBAL, Error.Level.ERROR, "Communication failed on SharedData", resMap.cause(), onComplete);
 			}
 		});
 	}
@@ -224,14 +224,14 @@ public class DealNeedToStopUtil {
 	 * Transfer the recorded stop request to the DEAL object.
 	 * @param vertx a vertx object
 	 * @param deals a list of DEAL objects
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 *          
 	 * 記録してある停止要求を DEAL オブジェクトに転記する.
 	 * @param vertx vertx オブジェクト
 	 * @param deals DEAL オブジェクトのリスト
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 */
-	public static void copyToDeals(Vertx vertx, List<JsonObject> deals, Handler<AsyncResult<Void>> completionHandler) {
+	public static void copyToDeals(Vertx vertx, List<JsonObject> deals, Handler<AsyncResult<Void>> onComplete) {
 		EncryptedClusterWideMapUtil.<String, JsonArray>getEncryptedClusterWideMap(vertx, MAP_NAME, resMap -> {
 			if (resMap.succeeded()) {
 				resMap.result().entries(resEntries -> {
@@ -245,13 +245,13 @@ public class DealNeedToStopUtil {
 								}
 							}
 						}
-						completionHandler.handle(Future.succeededFuture());
+						onComplete.handle(Future.succeededFuture());
 					} else {
-						ErrorExceptionUtil.logAndFail(Error.Category.FRAMEWORK, Error.Extent.GLOBAL, Error.Level.ERROR, "Communication failed on SharedData", resEntries.cause(), completionHandler);
+						ErrorExceptionUtil.logAndFail(Error.Category.FRAMEWORK, Error.Extent.GLOBAL, Error.Level.ERROR, "Communication failed on SharedData", resEntries.cause(), onComplete);
 					}
 				});
 			} else {
-				ErrorExceptionUtil.logAndFail(Error.Category.FRAMEWORK, Error.Extent.GLOBAL, Error.Level.ERROR, "Communication failed on SharedData", resMap.cause(), completionHandler);
+				ErrorExceptionUtil.logAndFail(Error.Category.FRAMEWORK, Error.Extent.GLOBAL, Error.Level.ERROR, "Communication failed on SharedData", resMap.cause(), onComplete);
 			}
 		});
 	}

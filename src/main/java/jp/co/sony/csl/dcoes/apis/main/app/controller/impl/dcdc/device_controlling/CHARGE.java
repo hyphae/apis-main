@@ -10,102 +10,65 @@ import jp.co.sony.csl.dcoes.apis.main.app.controller.impl.dcdc.DcdcDeviceControl
 import jp.co.sony.csl.dcoes.apis.main.app.controller.util.DDCon;
 import jp.co.sony.csl.dcoes.apis.main.util.ErrorUtil;
 
-/**
- * Put the device in charge mode.
- * If the specified grid current is larger than the prescribed value, call {@link GridCurrentStepping} to change it step by step.
- * If not, call {@link Checkpoint} to check the reflection.
- * @author OES Project
- *          
- * デバイスを受電モードにする.
- * グリッド電流指定が規定値より大きい場合は {@link GridCurrentStepping} を呼び出し段階的に変化させる.
- * そうでなければ {@link Checkpoint} を呼び反映を確認する.
- * @author OES Project
- */
 public class CHARGE extends AbstractDcdcDeviceControllingCommand {
-//	private static final Logger log = LoggerFactory.getLogger(CHARGE.class);
 
 	private Float gridCurrentA_;
 	private Float operationGridVoltageV_;
 	private Float gridCurrentStepA_;
 
-	/**
-	 * Create an instance.
-	 * @param vertx a vertx object
-	 * @param controller an object that actually sends commands to the device
-	 * @param params control parameters.
-	 *        - gridCurrentA: the grid current value [{@link Float}]. Required
-	 *          
-	 * インスタンスを生成する.
-	 * @param vertx vertx オブジェクト
-	 * @param controller 実際にデバイスに命令を送信するオブジェクト
-	 * @param params 制御パラメタ.
-	 *        - gridCurrentA : グリッド電流値 [{@link Float}]. 必須
-	 */
 	public CHARGE(Vertx vertx, DcdcDeviceControlling controller, JsonObject params) {
 		this(vertx, controller, params, params.getFloat("gridCurrentA"));
 	}
-	/**
-	 * Create an instance.
-	 * @param vertx a vertx object
-	 * @param controller an object that actually sends commands to the device
-	 * @param params control parameters
-	 * @param gridCurrentA grid current value. Cannot be {@code null}
-	 *          
-	 * インスタンスを生成する.
-	 * @param vertx vertx オブジェクト
-	 * @param controller 実際にデバイスに命令を送信するオブジェクト
-	 * @param params 制御パラメタ
-	 * @param gridCurrentA グリッド電流値. {@code null} 不可
-	 */
+
 	public CHARGE(Vertx vertx, DcdcDeviceControlling controller, JsonObject params, Float gridCurrentA) {
 		super(vertx, controller, params);
 		gridCurrentA_ = gridCurrentA;
 	}
 
-	// Do not start skipping dynamic safety checks in this process
-	// この処理により動的安全性チェックのスキップを開始しない
-	@Override protected boolean startIgnoreDynamicSafetyCheck() { return false; }
+	@Override
+	protected boolean startIgnoreDynamicSafetyCheck() {
+		return false;
+	}
 
-	// Stop skipping dynamic safety checks in this process
-	// この処理により動的安全性チェックのスキップを終了する
-	@Override protected boolean stopIgnoreDynamicSafetyCheck() { return true; }
+	@Override
+	protected boolean stopIgnoreDynamicSafetyCheck() {
+		return true;
+	}
 
-	@Override protected void doExecute(Handler<AsyncResult<JsonObject>> completionHandler) {
+	@Override
+	protected void doExecute(Handler<AsyncResult<JsonObject>> onComplete) {
 		if (gridCurrentA_ != null) {
 			operationGridVoltageV_ = PolicyKeeping.cache().getFloat("operationGridVoltageV");
 			gridCurrentStepA_ = PolicyKeeping.cache().getFloat("gridCurrentStepA");
 			if (operationGridVoltageV_ != null && gridCurrentStepA_ != null) {
-				execute__(completionHandler);
+				execute__(onComplete);
 			} else {
-				ErrorUtil.reportAndFail(vertx_, Error.Category.USER, Error.Extent.LOCAL, Error.Level.ERROR, "data deficiency; POLICY.operationGridVoltageV : " + operationGridVoltageV_ + ", POLICY.gridCurrentStepA : " + gridCurrentStepA_, completionHandler);
+				ErrorUtil.reportAndFail(vertx_, Error.Category.USER, Error.Extent.LOCAL, Error.Level.ERROR,
+						"data deficiency; POLICY.operationGridVoltageV : " + operationGridVoltageV_
+								+ ", POLICY.gridCurrentStepA : " + gridCurrentStepA_,
+						onComplete);
 			}
 		} else {
-			ErrorUtil.reportAndFail(vertx_, Error.Category.LOGIC, Error.Extent.LOCAL, Error.Level.ERROR, "illegal parameters, gridCurrentA : " + gridCurrentA_, completionHandler);
+			ErrorUtil.reportAndFail(vertx_, Error.Category.LOGIC, Error.Extent.LOCAL, Error.Level.ERROR,
+					"illegal parameters, gridCurrentA : " + gridCurrentA_, onComplete);
 		}
 	}
-	private void execute__(Handler<AsyncResult<JsonObject>> completionHandler) {
+
+	private void execute__(Handler<AsyncResult<JsonObject>> onComplete) {
 		if (gridCurrentA_ < gridCurrentStepA_) {
-			// The specified value is smaller than the step value, so specify it directly
-			// 指定値がステップ値より小さいので直接指定する
 			controller_.setDcdcMode(DDCon.Mode.CHARGE, operationGridVoltageV_, gridCurrentA_, res -> {
 				if (res.succeeded()) {
-					new Checkpoint(vertx_, controller_, params_, null, gridCurrentA_).execute(completionHandler);
+					new Checkpoint(vertx_, controller_, params_, null, gridCurrentA_).execute(onComplete);
 				} else {
-					completionHandler.handle(res);
+					onComplete.handle(res);
 				}
 			});
 		} else {
-			// The specified value is larger than the step value, so change it step by step
-			// 指定値がステップ値より大きいので段階的に変更する
-			// First, enter CHARGE mode with the step value
-			// まずステップ値で CHARGE モードにし
 			controller_.setDcdcMode(DDCon.Mode.CHARGE, operationGridVoltageV_, gridCurrentStepA_, res -> {
 				if (res.succeeded()) {
-					// Proceed to current step processing
-					// 電流ステップ処理に移行する
-					new GridCurrentStepping(vertx_, controller_, params_, gridCurrentA_).execute(completionHandler);
+					new GridCurrentStepping(vertx_, controller_, params_, gridCurrentA_).execute(onComplete);
 				} else {
-					completionHandler.handle(res);
+					onComplete.handle(res);
 				}
 			});
 		}

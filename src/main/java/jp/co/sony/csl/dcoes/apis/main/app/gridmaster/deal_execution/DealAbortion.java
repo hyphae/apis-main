@@ -5,8 +5,8 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -61,7 +61,7 @@ public class DealAbortion extends AbstractStoppableDealExecution {
 		reason_ = reason;
 	}
 
-	@Override protected void doExecute(Handler<AsyncResult<Void>> completionHandler) {
+	@Override protected void doExecute(Handler<AsyncResult<Void>> onComplete) {
 		// Stop the device that is not on the voltage reference side
 		// 電圧リファレンス側でない方のデバイスを停止し
 		stopDcdc_(resStopDcdc -> {
@@ -76,39 +76,39 @@ public class DealAbortion extends AbstractStoppableDealExecution {
 							if (resAbort.succeeded()) {
 								// Proceed to the "deactivate" process (deactivate the voltage reference side)
 								// deactivate ( 電圧リファレンス側を止める ) 処理に移行する
-								new DealDeactivation(this).execute(completionHandler);
+								new DealDeactivation(this).execute(onComplete);
 							} else {
-								completionHandler.handle(resAbort);
+								onComplete.handle(resAbort);
 							}
 						});
 					} else {
-						completionHandler.handle(resStopDeal);
+						onComplete.handle(resStopDeal);
 					}
 				});
 			} else {
-				completionHandler.handle(resStopDcdc);
+				onComplete.handle(resStopDcdc);
 			}
 		});
 	}
 
-	@Override protected void stopDeal_(Handler<AsyncResult<Void>> completionHandler) {
+	@Override protected void stopDeal_(Handler<AsyncResult<Void>> onComplete) {
 		// Change the state of a DEAL object according to the present DEAL object
 		// 現状の DEAL オブジェクトに応じて DEAL オブジェクトの状態を変更する
 		if (Deal.isStarted(deal_)) {
 			if (!Deal.isStopped(deal_)) {
-				super.stopDeal_(completionHandler);
+				super.stopDeal_(onComplete);
 			} else {
 				if (log.isInfoEnabled()) log.info("already stopped");
-				completionHandler.handle(Future.succeededFuture());
+				onComplete.handle(Future.succeededFuture());
 			}
 		} else {
 			if (log.isInfoEnabled()) log.info("not yet started");
-			completionHandler.handle(Future.succeededFuture());
+			onComplete.handle(Future.succeededFuture());
 		}
 	}
 
-	private void abortDeal_(Handler<AsyncResult<Void>> completionHandler) {
-		DealUtil.abort(vertx_, deal_, referenceDateTimeString_(), reason_, resAbort -> ErrorExceptionUtil.reportIfNeedAndHandle(vertx_, resAbort, completionHandler));
+	private void abortDeal_(Handler<AsyncResult<Void>> onComplete) {
+		DealUtil.abort(vertx_, deal_, referenceDateTimeString_(), reason_, resAbort -> ErrorExceptionUtil.reportIfNeedAndHandle(vertx_, resAbort, onComplete));
 	}
 
 }

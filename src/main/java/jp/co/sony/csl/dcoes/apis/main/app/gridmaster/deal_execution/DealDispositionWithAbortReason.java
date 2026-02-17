@@ -56,18 +56,18 @@ public class DealDispositionWithAbortReason extends DealDisposition {
 		abortReason_ = abortReason;
 	}
 
-	@Override protected void doExecute(Handler<AsyncResult<Void>> completionHandler) {
+	@Override protected void doExecute(Handler<AsyncResult<Void>> onComplete) {
 		abortDeal_(resAbort-> {
 			if (resAbort.succeeded()) {
-				super.doExecute(completionHandler);
+				super.doExecute(onComplete);
 			} else {
-				completionHandler.handle(resAbort);
+				onComplete.handle(resAbort);
 			}
 		});
 	}
 
-	private void abortDeal_(Handler<AsyncResult<Void>> completionHandler) {
-		DealUtil.abort(vertx_, deal_, referenceDateTimeString_(), abortReason_, resAbort -> ErrorExceptionUtil.reportIfNeedAndHandle(vertx_, resAbort, completionHandler));
+	private void abortDeal_(Handler<AsyncResult<Void>> onComplete) {
+		DealUtil.abort(vertx_, deal_, referenceDateTimeString_(), abortReason_, resAbort -> ErrorExceptionUtil.reportIfNeedAndHandle(vertx_, resAbort, onComplete));
 	}
 
 }
