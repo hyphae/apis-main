@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 package jp.co.sony.csl.dcoes.apis.main.app.controller.impl.dcdc.v2;
 
 import io.vertx.core.AsyncResult;

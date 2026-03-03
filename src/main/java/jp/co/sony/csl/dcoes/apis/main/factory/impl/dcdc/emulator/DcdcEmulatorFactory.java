@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 package jp.co.sony.csl.dcoes.apis.main.factory.impl.dcdc.emulator;
 
 import jp.co.sony.csl.dcoes.apis.main.factory.ControllerFactory;
