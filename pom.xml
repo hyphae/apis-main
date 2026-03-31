@@ -7,7 +7,7 @@
 
   <groupId>jp.co.sony.csl.dcoes.apis</groupId>
   <artifactId>apis-main</artifactId>
-  <version>3.0.0</version>
+  <version>3.9.0</version>
 
   <name>APIS MAIN</name>
 
@@ -27,12 +27,11 @@
     <dependency>
       <groupId>jp.co.sony.csl.dcoes.apis</groupId>
       <artifactId>apis-common</artifactId>
-      <version>3.0.0</version>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
       <artifactId>vertx-core</artifactId>
-      <version>3.9.16</version>
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
