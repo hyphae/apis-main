@@ -127,14 +127,16 @@
       <dependency>
         <groupId>jp.co.sony.csl.dcoes.apis</groupId>
         <artifactId>apis-bom</artifactId>
-        <version>3.4.1</version>
+        <version>${apis.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
     </dependencies>
   </dependencyManagement>
   <properties>
+    <apis.version>3.4.1</apis.version>
     <maven-shade-plugin.version>3.6.1</maven-shade-plugin.version>
+    <vertx.version>3.9.14</vertx.version>
     <maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
     <maven-assembly-plugin.version>3.6.0</maven-assembly-plugin.version>
     <maven-javadoc-plugin.version>3.12.0</maven-javadoc-plugin.version>
