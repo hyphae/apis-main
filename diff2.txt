@@ -1,0 +1,54 @@
+diff --git a/src/main/java/jp/co/sony/csl/dcoes/apis/main/evaluation/safety/GridBranchCurrentCapacity.java b/src/main/java/jp/co/sony/csl/dcoes/apis/main/evaluation/safety/GridBranchCurrentCapacity.java
+index 361ebd7..490300f 100755
+--- a/src/main/java/jp/co/sony/csl/dcoes/apis/main/evaluation/safety/GridBranchCurrentCapacity.java
++++ b/src/main/java/jp/co/sony/csl/dcoes/apis/main/evaluation/safety/GridBranchCurrentCapacity.java
+@@ -61,19 +61,18 @@ public class GridBranchCurrentCapacity {
+ 	 * @param policy a POLICY object
+ 	 * @param unitData unit data of all units
+ 	 * @param completionHandler the completion handler
+-	 * TODO: Checks are ended if one deviation is found, but should check everything
+ 	 *          
+ 	 * グリッドのトポロジを考慮した電流容量チェックを実行する.
+ 	 * @param vertx vertx オブジェクト
+ 	 * @param policy POLICY オブジェクト
+ 	 * @param unitData 全ユニットのユニットデータ
+ 	 * @param completionHandler the completion handler
+-	 * TODO : 逸脱が一つ見つかったら終わらせてるが全部チェックすべき
+ 	 */
+ 	private static void check_topologyBased_(Vertx vertx, JsonObject policy, JsonObject unitData, Handler<AsyncResult<Void>> completionHandler) {
+ 		JsonObject config = JsonObjectUtil.getJsonObject(policy, "safety", "gridTopologyBasedEvaluation");
+ 		List<String> branchIds = JsonObjectUtil.getStringList(config, "branchIds");
+ 		if (branchIds != null) {
++			List<String> errorMessages = new ArrayList<>();
+ 			for (String aBranchId : branchIds) {
+ 				if (log.isInfoEnabled()) log.info(aBranchId);
+ 				Float capacity = JsonObjectUtil.getFloat(config, "branchCurrentCapacityA", aBranchId);
+@@ -95,13 +94,16 @@ public class GridBranchCurrentCapacity {
+ 					}
+ 					if (log.isInfoEnabled()) log.info("  forward sum of dcdc.meter.ig : " + sum);
+ 					if (Math.abs(capacity) < Math.abs(sum)) {
+-						ErrorUtil.reportAndFail(vertx, Error.Category.HARDWARE, Error.Extent.GLOBAL, Error.Level.ERROR, "branch : " + aBranchId + ", forward sum of dcdc.meter.ig : " + sum + ", exceeds capacity : " + capacity, completionHandler);
+-						return;
++						errorMessages.add("branch : " + aBranchId + ", forward sum of dcdc.meter.ig : " + sum + ", exceeds capacity : " + capacity);
+ 					}
+ 				} else {
+ 					ErrorUtil.report(vertx, Error.Category.USER, Error.Extent.GLOBAL, Error.Level.WARN, "data deficiency ; POLICY.safety.gridTopologyBasedEvaluation.branchCurrentCapacityA." + aBranchId + " : " + capacity + ", POLICY.safety.gridTopologyBasedEvaluation.branchAssociation." + aBranchId + ".forwardUnitIds : " + forwardUnitIds);
+ 				}
+ 			}
++			if (!errorMessages.isEmpty()) {
++				ErrorUtil.reportAndFail(vertx, Error.Category.HARDWARE, Error.Extent.GLOBAL, Error.Level.ERROR, String.join(" ; ", errorMessages), completionHandler);
++				return;
++			}
+ 			completionHandler.handle(Future.succeededFuture());
+ 		} else {
+ 			ErrorUtil.reportAndFail(vertx, Error.Category.USER, Error.Extent.GLOBAL, Error.Level.WARN, "no POLICY.safety.gridTopologyBasedEvaluation.branchIds", completionHandler);
+commit 037b633583b3d2d23e8a5fa7d733e8529895252a
+Author: Pushpraj <pushprajkpr7@gmail.com>
+Date:   Mon Apr 13 13:46:49 2026 +0530
+
+    Fix #45: Aggregate deviations in GridBranchCurrentCapacity
+    
+    Signed-off-by: Pushpraj <pushprajkpr7@gmail.com>
+
+ .../apis/main/evaluation/safety/GridBranchCurrentCapacity.java | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
