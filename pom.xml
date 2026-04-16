@@ -5,6 +5,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <apis.version>3.4.1</apis.version>
     <vertx.version>3.9.14</vertx.version>
+    <main.version>3.9.0</main.version>
     <maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
     <maven-shade-plugin.version>3.6.1</maven-shade-plugin.version>
     <maven-antrun-plugin.version>3.1.0</maven-antrun-plugin.version>
@@ -14,7 +15,7 @@
 
   <groupId>jp.co.sony.csl.dcoes.apis</groupId>
   <artifactId>apis-main</artifactId>
-  <version>3.9.0</version>
+  <version>${main.version}</version>
 
   <name>APIS MAIN</name>
 
