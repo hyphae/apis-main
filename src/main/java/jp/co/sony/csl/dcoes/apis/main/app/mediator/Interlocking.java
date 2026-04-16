@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 package jp.co.sony.csl.dcoes.apis.main.app.mediator;
 
 import io.vertx.core.AbstractVerticle;
@@ -372,7 +374,7 @@ public class Interlocking extends AbstractVerticle {
 					completionHandler.handle(Future.succeededFuture());
 				}
 			} else {
-				ErrorExceptionUtil.reportIfNeed(vertx, resDeals.cause());
+				ErrorExceptionUtil.reportIfNeedAndFail(vertx, resDeals.cause(), completionHandler);
 			}
 		});
 	}
