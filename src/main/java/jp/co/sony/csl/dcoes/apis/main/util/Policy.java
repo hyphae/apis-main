@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: Apache-2.0
-
 package jp.co.sony.csl.dcoes.apis.main.util;
 
 import io.vertx.core.json.JsonObject;

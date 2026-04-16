@@ -1,6 +1,6 @@
 
 package:
-	mvn package -Dmaven.test.skip=true
+	mvn package
 
 clean:
 	mvn clean

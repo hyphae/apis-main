@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: Apache-2.0
-
 package jp.co.sony.csl.dcoes.apis.main.factory.impl.dcdc.v2;
 
 import jp.co.sony.csl.dcoes.apis.main.factory.ControllerFactory;

@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: Apache-2.0
-
 package jp.co.sony.csl.dcoes.apis.main.app;
 
 import io.vertx.ext.unit.TestContext;
