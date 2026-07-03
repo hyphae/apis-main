@@ -4,6 +4,6 @@ CLUSTER_XML=cluster.xml
 if [ "$(uname)" = 'Darwin' ] ; then
 	CLUSTER_XML=cluster-mac.xml
 fi
-java -Djava.net.preferIPv4Stack=true -Duser.timezone=Asia/Tokyo -Djava.util.logging.config.file=./logging.properties -Dvertx.hazelcast.config=./$CLUSTER_XML -jar ../target/apis-main-3.4.1-fat.jar -conf ./config.json -cluster -cluster-host 127.0.0.1
+java -Djava.net.preferIPv4Stack=true -Duser.timezone=Asia/Tokyo -Djava.util.logging.config.file=./logging.properties -Dvertx.hazelcast.config=./$CLUSTER_XML -jar ../target/apis-main-4.5.10-fat.jar -conf ./config.json -cluster -cluster-host 127.0.0.1
 
 echo '... done'
