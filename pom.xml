@@ -3,11 +3,12 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.release>11</maven.compiler.release>
   </properties>
 
   <groupId>jp.co.sony.csl.dcoes.apis</groupId>
   <artifactId>apis-main</artifactId>
-  <version>3.4.1</version>
+  <version>4.5.10</version>
 
   <name>APIS MAIN</name>
 
@@ -16,7 +17,7 @@
       <dependency>
         <groupId>jp.co.sony.csl.dcoes.apis</groupId>
         <artifactId>apis-bom</artifactId>
-        <version>3.4.1</version>
+        <version>${project.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -27,7 +28,6 @@
     <dependency>
       <groupId>jp.co.sony.csl.dcoes.apis</groupId>
       <artifactId>apis-common</artifactId>
-      <version>3.0.0</version>
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
@@ -58,14 +58,9 @@
   <build>
     <pluginManagement>
       <plugins>
-        <!-- We specify the Maven compiler plugin as we need to set it to Java 1.8 -->
         <plugin>
           <artifactId>maven-compiler-plugin</artifactId>
           <version>3.14.1</version>
-          <configuration>
-            <source>1.8</source>
-            <target>1.8</target>
-          </configuration>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -107,7 +102,6 @@
       </plugin>
       <plugin>
         <artifactId>maven-antrun-plugin</artifactId>
-        <version>3.1.0</version>
         <executions>
           <execution>
             <phase>package</phase>
@@ -125,7 +119,6 @@
       </plugin>
       <plugin>
         <artifactId>maven-assembly-plugin</artifactId>
-        <version>3.6.0</version>
         <executions>
           <execution>
             <phase>package</phase>
@@ -147,7 +140,6 @@
         <version>3.12.0</version>
         <configuration>
           <author>true</author>
-          <source>1.8</source>
           <show>private</show>
           <encoding>UTF-8</encoding>
           <charset>UTF-8</charset>
