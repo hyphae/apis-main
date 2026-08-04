@@ -35,7 +35,7 @@
   - [**6.3. scenario.json**](#63-scenariojson)
   - [**6.4. policy.json**](#64-policyjson)
   - [**6.5. cluster.xml**](#65-clusterxml)
-  - [**6.6. logging.properties**](#66-loggingproperties)
+   - [**6.6. logback.xml**](#66-logbackxml)
   - [**6.7. start.sh**](#67-startsh)
   - [**6.8. stop-kill.sh**](#68-stop-killsh)
   - [**6.9. key.pem**](#69-keypem)
@@ -1288,9 +1288,9 @@ Encrypted and saved as cluster.xml.encrypted.
 
 <br>
 
-## **6.6. logging.properties**
+## **6.6. logback.xml**
 
-File containing settings related to the output of Java’s standard logging API java.util.logging (destination of log file, storage capacity of log file, log level configuration, etc.).
+File containing settings related to the output of SLF4J with Logback (destination of log file, storage capacity of log file, log level configuration, etc.).
 
 <br>
 
@@ -1300,7 +1300,7 @@ Script file for starting up apis-main. It is automatically run when the operatin
 
 The command to start apis-main in start.sh is as follows:
 
-> java -Djava.net.preferIPv4Stack=true -Duser.timezone=Asia/Tokyo -Djava.util.logging.config.file=./logging.properties -jar ./apis-main-2.xx.x-a01-fat.jar -conf ./config.json -cp ./ -cluster -cluster-host 192.168.0.1 &
+> java -Djava.net.preferIPv4Stack=true -Duser.timezone=Asia/Tokyo -Dlogback.configurationFile=./logback.xml -jar ./apis-main-2.xx.x-a01-fat.jar -conf ./config.json -cp ./ -cluster -cluster-host 192.168.0.1 &
 
 The arguments after “java” are described here.
 
@@ -1310,8 +1310,8 @@ The arguments after “java” are described here.
 * Duser.timezone=Asia/Tokyo  
 -> Timezone setting
 
-* Djava.util.logging.config.file=./logging.properties  
--> Option for specifying the logging configuration file.
+* Dlogback.configurationFile=./logback.xml  
+-> Option for specifying the Logback configuration file.
 
 * jar ./apis-main-2.xx.x-a01-fat.jar  
 -> Option for specifying the execution of program encapsulated in the JAR file.
@@ -1647,40 +1647,33 @@ Continue existing energy sharing</p>
     
 ## **9.1. apis-main Action Log**
 
-The standard Java API java.util.logging is used for log output. Logging is divided into the seven levels described below. apis-main logging does not output the “CONFIG” and “FINER” levels. The destinations of the apis-main action log, log levels to be saved, maximum log size, maximum number of records to be saved, etc. are set in the logging.properties file.
+SLF4J with Logback is used for log output. Logging uses the native Logback levels ERROR, WARN, INFO, DEBUG, and TRACE. The destinations of the apis-main action log, log levels to be saved, maximum log size, and maximum number of records to be saved, etc. are set in the logback.xml file.
 
-\[java.util.logging Log Level\]
+\[Logback Log Level\]
 
-1. SEVERE  
+1. ERROR  
    →Information about a critical condition or error. Indicates a condition where an issue has occurred and processing cannot continue.  
    Corresponds to “FATAL” or “ERROR” in apis-main processing.
 
-1. WARNING  
+2. WARN  
    →Warning information. Indicates a condition where processing continues although there are issues.  
    Corresponds to “WARN” information in apis-main processing.
 
-1. INFO  
+3. INFO  
    →Normal system information. Outputted when processing of important events occurs.
    Corresponds to “INFO” in apis-main processing.
 
-1. CONFIG  
-   →Information related to settings.
-   This level is not outputted in the log for apis-main.
-
-1. FINE  
+4. DEBUG  
    →Debug information. Corresponds to “DEBUG” in apis-main processing.
 
-1. FINER  
-   →Starting and ending information for particular processes. Information related to internal exceptions. This level is not outputted in the log for apis-main.
-
-1. FINEST  
+5. TRACE  
    →Thread information. Corresponds to “TRACE” in apis-main processing.
 
 <br>
 
 ## **9.2. Output Destination of apis-main Action Log**
 
-The apis-main action log has three output destinations: UDP, console, and file. Enabling/disabling each output and applying restrictions on the output level as explained in the previous section can be set in logging.properties. Because UDP is outputted on the communication line, set the log after taking into consideration security against data breaches and the amount of data traffic. Set file output after taking into consideration the amount of non-volatile memory available.
+The apis-main action log has three output destinations: UDP, console, and file. Enabling/disabling each output and applying restrictions on the output level as explained in the previous section can be set in logback.xml. Because UDP is outputted on the communication line, set the log after taking into consideration security against data breaches and the amount of data traffic. Set file output after taking into consideration the amount of non-volatile memory available.
 
 ![](media/media/image21.png)  
 Fig. 9-1

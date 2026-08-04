@@ -65,7 +65,7 @@
 
 &emsp;[6.5.cluster.xml](#anchor6-5)
 
-&emsp;[6.6.logging.properties](#anchor6-6)
+&emsp;[6.6.logback.xml](#anchor6-6)
 
 &emsp;[6.7.start.sh](#anchor6-7)
 
@@ -752,10 +752,10 @@ xml形式のファイルでHazelcastがクラスタを構築する際に必要�
 暗号化しcluster.xml.encrypted として保存される。
 
 <a id="anchor6-6"></a>
-**6.6.logging.properties**
+**6.6.logback.xml**
 --------------------------
 
-Javaの標準APIであるjava.util.loggingのLogの出力に関する設定(Logファイルの保存先、Log の保存容量、Logレベルの設定など)が記述されているファイル。
+SLF4J/LogbackのLogの出力に関する設定(Logファイルの保存先、Log の保存容量、Logレベルの設定など)が記述されているファイル。
 
 <a id="anchor6-7"></a>
 **6.7.start.sh**
@@ -765,7 +765,7 @@ apis-mainを起動させるスクリプトファイル。OS起動時の自動実
 
 以下にstart.sh内でのapis-mainを起動させるコマンドを示す。
 
-java -Djava.net.preferIPv4Stack=true -Duser.timezone=Asia/Tokyo -Djava.util.logging.config.file=./logging.properties -jar ./apis-main-2.xx.x-a01-fat.jar -conf ./config.json -cp ./ -cluster -cluster-host 127.0.0.1 &
+java -Djava.net.preferIPv4Stack=true -Duser.timezone=Asia/Tokyo -Dlogback.configurationFile=./logback.xml -jar ./apis-main-2.xx.x-a01-fat.jar -conf ./config.json -cp ./ -cluster -cluster-host 127.0.0.1 &
 
 “java”の後の引き数の意味を以下に説明する。  
 
@@ -775,8 +775,8 @@ java -Djava.net.preferIPv4Stack=true -Duser.timezone=Asia/Tokyo -Djava.util.logg
   -Duser.timezone=Asia/Tokyo  
    Timezone設定  
 
-  -Djava.util.logging.config.file=./logging.properties  
-   Log構成ファイルを指定するオプション  
+  -Dlogback.configurationFile=./logback.xml  
+   Logback構成ファイルを指定するオプション  
 
   -jar ./apis-main-2.xx.x-a01-fat.jar  
    JARファイルの中にカプセル化されたプログラムの実行を指定するオプション  
@@ -934,16 +934,16 @@ Grid Masterが収集した情報を不揮発性メモリに記録することは
 **9.1.apis-main動作Log**
 ------------------------
 
-Log出力にはJava標準APIのjava.util.loggingを使っており以下の7つのLevelに分類されている。apis-mainとしては”CONFIG”, “FINER”のLevelは使用しない。これらのapis-mainの動作Logはlogging.propertiesファイルに記載することでLogファイルの保存先、保存するLog Level、最大Logサイズ、最大保存Log数などの設定を行っている。
+Log出力にはSLF4J/Logbackを使っており、apis-mainではLogbackの標準LevelであるERROR, WARN, INFO, DEBUG, TRACEを使う。これらのapis-mainの動作Logはlogback.xmlファイルに記載することでLogファイルの保存先、保存するLog Level、最大Logサイズ、最大保存Log数などの設定を行っている。
 
-\[java.util.logging Log Level\]
+\[Logback Log Level\]
 
-1.SEVERE
+1.ERROR
 
   致命的な状況やErrorについての情報で、問題が発生し処理が継続不能な状況である。
   apis-main処理の”FATAL”, “ERROR”に対応する。
 
-2.WARNING
+2.WARN
 
   警告についての情報で、問題が発生しているが処理は継続可能な状況である。
   apis-main処理の”WARN”の情報に対応する。
@@ -953,21 +953,11 @@ Log出力にはJava標準APIのjava.util.loggingを使っており以下の7つ�
   正常系の情報で、特に動作として重要なイベントを行った場合に出力する。
   apis-main処理の”INFO”に対応する。
 
-4.CONFIG
-
-  設定に関する情報である。
-  apis-mainとしてはこのLevelのLog出力はない。
-
-5.FINE　
+4.DEBUG
 
   デバッグ情報である。apis-main処理の”DEBUG”に対応する。
 
-6.FINER
-
-  特定の処理についての開始及び終了の情報。内部に発生した例外に関する情報である。
-  apis-mainとしてこのLevelのLog出力はない。
-
-7.FINEST
+5.TRACE
 
   トレース情報である。apis-main処理の”TRACE”に対応する。
 
@@ -975,7 +965,7 @@ Log出力にはJava標準APIのjava.util.loggingを使っており以下の7つ�
 **9.2.apis-main動作Log出力先**
 -------------------------------
 
-apis-mainの動作LogはUDP、Console、ファイルの3つの出力先がある。logging.propertiesの設定でそれぞれの出力の有無や前頁で述べた出力Levelの制限をかけることができる。UDPはCommunication Lineに出力されるため情報漏洩や通信のトラフィックを考慮して設定し、ファイルへの出力は不揮発性メモリの容量を考慮して設定する。
+apis-mainの動作LogはUDP、Console、ファイルの3つの出力先がある。logback.xmlの設定でそれぞれの出力の有無や前頁で述べた出力Levelの制限をかけることができる。UDPはCommunication Lineに出力されるため情報漏洩や通信のトラフィックを考慮して設定し、ファイルへの出力は不揮発性メモリの容量を考慮して設定する。
 
 <img src="media/media/image22.png" style="width:4.71779in;height:3.28205in" />
 <p align="center">図9-1</p>
@@ -1550,7 +1540,7 @@ Localネットワーク内のみで成立するSystem構成の場合はapis-main
   [**6.3.** **scenario.json** 31]: #scenario.json
   [**6.4.** **policy.json** 35]: #policy.json
   [**6.5.** **cluster.xml** 39]: #cluster.xml
-  [**6.6.** **logging.properties** 39]: #logging.properties
+  [**6.6.** **logback.xml** 39]: #anchor6-6
   [**6.7.** **start.sh** 40]: #start.sh
   [**6.8.** **stop-kill.sh** 40]: #stop-kill.sh
   [**6.9.** **key.pem** 41]: #key.pem

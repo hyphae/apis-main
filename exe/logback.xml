@@ -3,8 +3,6 @@
 
   <conversionRule conversionWord="apisPrefix"
                   converterClass="jp.co.sony.csl.dcoes.apis.common.util.logback.ApisLogPrefixConverter" />
-  <conversionRule conversionWord="jullevel"
-                  converterClass="jp.co.sony.csl.dcoes.apis.common.util.logback.JulLevelConverter" />
 
   <property name="APIS_PATTERN"
             value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n" />
@@ -57,7 +55,7 @@
     <port>8888</port>
     <networkInterface>${APIS_MULTICAST_INTERFACE}</networkInterface>
     <encoder>
-      <pattern>%apisPrefix[%thread] %d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %jullevel [%logger]  %msg%n</pattern>
+      <pattern>%apisPrefix[%thread] %d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %level [%logger]  %msg%n</pattern>
     </encoder>
   </appender>
 
