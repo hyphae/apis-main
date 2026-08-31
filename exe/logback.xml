@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+  <conversionRule conversionWord="apisPrefix"
+                  converterClass="jp.co.sony.csl.dcoes.apis.common.util.logback.ApisLogPrefixConverter" />
+
+  <property name="APIS_PATTERN"
+            value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n" />
+
+  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>${APIS_PATTERN}</pattern>
+    </encoder>
+  </appender>
+
+  <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>./apis.log</file>
+    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+      <level>INFO</level>
+    </filter>
+    <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+      <fileNamePattern>./apis.%i.log</fileNamePattern>
+      <minIndex>1</minIndex>
+      <maxIndex>10</maxIndex>
+    </rollingPolicy>
+    <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+      <maxFileSize>5MB</maxFileSize>
+    </triggeringPolicy>
+    <encoder>
+      <pattern>${APIS_PATTERN}</pattern>
+    </encoder>
+  </appender>
+
+  <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>./apis.err</file>
+    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+      <level>WARN</level>
+    </filter>
+    <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+      <fileNamePattern>./apis.%i.err</fileNamePattern>
+      <minIndex>1</minIndex>
+      <maxIndex>10</maxIndex>
+    </rollingPolicy>
+    <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+      <maxFileSize>5MB</maxFileSize>
+    </triggeringPolicy>
+    <encoder>
+      <pattern>${APIS_PATTERN}</pattern>
+    </encoder>
+  </appender>
+
+  <appender name="MULTICAST" class="jp.co.sony.csl.dcoes.apis.common.util.logback.MulticastAppender">
+    <groupAddress>224.2.2.4</groupAddress>
+    <port>8888</port>
+    <encoder>
+      <pattern>%apisPrefix[%thread] %d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %level [%logger]  %msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <logger name="jp.co.sony.csl.dcoes" level="ALL" />
+  <logger name="io.vertx.ext.apex" level="TRACE" />
+  <logger name="io.vertx" level="INFO" />
+  <logger name="com.hazelcast" level="INFO" />
+  <logger name="io.netty.util.internal.PlatformDependent" level="ERROR" />
+
+  <root level="INFO">
+    <appender-ref ref="CONSOLE" />
+    <appender-ref ref="FILE" />
+    <appender-ref ref="ERROR_FILE" />
+    <appender-ref ref="MULTICAST" />
+  </root>
+
+</configuration>

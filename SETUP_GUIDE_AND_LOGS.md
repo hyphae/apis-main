@@ -89,7 +89,7 @@ If you must use PowerShell, run the Java command manually:
 2.  Run the application:
     ```powershell
     $jarPath = "../target/apis-main-3.0.0-fat.jar"
-    java -Djava.net.preferIPv4Stack=true -Duser.timezone=Asia/Tokyo -Djava.util.logging.config.file=./logging.properties -Dvertx.hazelcast.config=./cluster.xml -jar $jarPath -conf ./config.json -cluster -cluster-host 127.0.0.1
+    java -Djava.net.preferIPv4Stack=true -Duser.timezone=Asia/Tokyo -Dlogback.configurationFile=./logback.xml -Dvertx.hazelcast.config=./cluster.xml -jar $jarPath -conf ./config.json -cluster -cluster-host 127.0.0.1
     ```
 3.  Stop the application:
     Press `Ctrl+C` in the terminal window.
@@ -115,7 +115,7 @@ mvn test > test_results.log 2>&1
 
 ### Where to Find Logs
 *   **Standard Output**: Displayed in the terminal during execution.
-*   **Log Files**: Created in the `exe` directory (configured via `logging.properties`).
+*   **Log Files**: Created in the `exe` directory (configured via `logback.xml`).
     *   `*.log`: General logs (e.g., `0.0.log`).
     *   `*.err`: Error logs.
 
