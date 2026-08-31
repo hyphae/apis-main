@@ -10,8 +10,8 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import jp.co.sony.csl.dcoes.apis.common.Deal;
 import jp.co.sony.csl.dcoes.apis.common.Error;
 import jp.co.sony.csl.dcoes.apis.common.util.DateTimeUtil;
@@ -33,17 +33,17 @@ public class DealUtil {
 	private static final LocalExclusiveLock exclusiveLock_ = new LocalExclusiveLock(DealUtil.class.getName());
 	/**
 	 * Acquire an exclusive lock.
-	 * Results are received with the {@link AsyncResult#result()} method of completionHandler.
+	 * Results are received with the {@link AsyncResult#result()} method of onComplete.
 	 * @param vertx a vertx object
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 *          
 	 * 排他ロックを獲得する.
-	 * completionHandler の {@link AsyncResult#result()} で受け取る.
+	 * onComplete の {@link AsyncResult#result()} で受け取る.
 	 * @param vertx vertx オブジェクト
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 */
-	public static void acquireExclusiveLock(Vertx vertx, Handler<AsyncResult<LocalExclusiveLock.Lock>> completionHandler) {
-		exclusiveLock_.acquire(vertx, completionHandler);
+	public static void acquireExclusiveLock(Vertx vertx, Handler<AsyncResult<LocalExclusiveLock.Lock>> onComplete) {
+		exclusiveLock_.acquire(vertx, onComplete);
 	}
 	/**
 	 * Reset an exclusive lock.
@@ -65,15 +65,15 @@ public class DealUtil {
 	 * Global error if a DEAL with the same ID already exists.
 	 * @param vertx a vertx object
 	 * @param deal a DEAL object
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 *          
 	 * DEAL 情報を共有メモリに格納する.
 	 * 同じ ID の DEAL がすでに存在していたらグローバルエラー.
 	 * @param vertx vertx オブジェクト
 	 * @param deal DEAL オブジェクト
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 */
-	public static void add(Vertx vertx, JsonObject deal, Handler<AsyncResult<Void>> completionHandler) {
+	public static void add(Vertx vertx, JsonObject deal, Handler<AsyncResult<Void>> onComplete) {
 		String dealId = Deal.dealId(deal);
 		if (dealId != null) {
 			EncryptedClusterWideMapUtil.<String, JsonObject>getEncryptedClusterWideMap(vertx, MAP_NAME, resMap -> {
@@ -83,86 +83,86 @@ public class DealUtil {
 							JsonObject existingValue = resPutIfAbsent.result();
 							if (existingValue == null) {
 								if (log.isInfoEnabled()) log.info("deal created : " + dealId);
-								completionHandler.handle(Future.succeededFuture());
+								onComplete.handle(Future.succeededFuture());
 							} else {
 								String msg = "DealUtil.add(); deal already exists with same id : " + dealId;
-								ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, msg, completionHandler);
+								ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, msg, onComplete);
 							}
 						} else {
-							ErrorExceptionUtil.logAndFail(Error.Category.FRAMEWORK, Error.Extent.GLOBAL, Error.Level.ERROR, "Communication failed on SharedData", resPutIfAbsent.cause(), completionHandler);
+							ErrorExceptionUtil.logAndFail(Error.Category.FRAMEWORK, Error.Extent.GLOBAL, Error.Level.ERROR, "Communication failed on SharedData", resPutIfAbsent.cause(), onComplete);
 						}
 					});
 				} else {
-					ErrorExceptionUtil.logAndFail(Error.Category.FRAMEWORK, Error.Extent.GLOBAL, Error.Level.ERROR, "Communication failed on SharedData", resMap.cause(), completionHandler);
+					ErrorExceptionUtil.logAndFail(Error.Category.FRAMEWORK, Error.Extent.GLOBAL, Error.Level.ERROR, "Communication failed on SharedData", resMap.cause(), onComplete);
 				}
 			});
 		} else {
-			ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, "DealUtil.add(); no dealId in deal : " + deal, completionHandler);
+			ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, "DealUtil.add(); no dealId in deal : " + deal, onComplete);
 		}
 	}
 
 	/**
 	 * Get all DEAL objects stored in shared memory.
-	 * Results are received with the {@link AsyncResult#result()} method of completionHandler.
+	 * Results are received with the {@link AsyncResult#result()} method of onComplete.
 	 * @param vertx a vertx object
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 *          
 	 * 共有メモリに格納されている DEAL オブジェクトを全て取得する.
-	 * completionHandler の {@link AsyncResult#result()} で受け取る.
+	 * onComplete の {@link AsyncResult#result()} で受け取る.
 	 * @param vertx vertx オブジェクト
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 */
-	public static void all(Vertx vertx, Handler<AsyncResult<List<JsonObject>>> completionHandler) {
+	public static void all(Vertx vertx, Handler<AsyncResult<List<JsonObject>>> onComplete) {
 		EncryptedClusterWideMapUtil.<String, JsonObject>getEncryptedClusterWideMap(vertx, MAP_NAME, resMap -> {
 			if (resMap.succeeded()) {
-				resMap.result().values(completionHandler);
+				resMap.result().values(onComplete);
 			} else {
-				ErrorExceptionUtil.logAndFail(Error.Category.FRAMEWORK, Error.Extent.GLOBAL, Error.Level.ERROR, "Communication failed on SharedData", resMap.cause(), completionHandler);
+				ErrorExceptionUtil.logAndFail(Error.Category.FRAMEWORK, Error.Extent.GLOBAL, Error.Level.ERROR, "Communication failed on SharedData", resMap.cause(), onComplete);
 			}
 		});
 	}
 
 	/**
 	 * Get the Master Deal from shared memory.
-	 * Results are received with the {@link AsyncResult#result()} method of completionHandler.
+	 * Results are received with the {@link AsyncResult#result()} method of onComplete.
 	 * @param vertx a vertx object
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 *          
 	 * 共有メモリから Master Deal を取得する.
-	 * completionHandler の {@link AsyncResult#result()} で受け取る.
+	 * onComplete の {@link AsyncResult#result()} で受け取る.
 	 * @param vertx vertx オブジェクト
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 */
-	public static void master(Vertx vertx, Handler<AsyncResult<JsonObject>> completionHandler) {
+	public static void master(Vertx vertx, Handler<AsyncResult<JsonObject>> onComplete) {
 		all(vertx, resAll -> {
 			if (resAll.succeeded()) {
 				for (JsonObject aDeal : resAll.result()) {
 					if (Deal.isMaster(aDeal)) {
-						completionHandler.handle(Future.succeededFuture(aDeal));
+						onComplete.handle(Future.succeededFuture(aDeal));
 						return;
 					}
 				}
-				completionHandler.handle(Future.succeededFuture());
+				onComplete.handle(Future.succeededFuture());
 			} else {
-				completionHandler.handle(Future.failedFuture(resAll.cause()));
+				onComplete.handle(Future.failedFuture(resAll.cause()));
 			}
 		});
 	}
 
 	/**
 	 * Get the DEAL object in which the unit specified by {@code unitId} participates from shared memory.
-	 * Results are received with the {@link AsyncResult#result()} method of completionHandler.
+	 * Results are received with the {@link AsyncResult#result()} method of onComplete.
 	 * @param vertx a vertx object
 	 * @param unitId the unit ID
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 *          
 	 * {@code unitId} で指定したユニットが参加している DEAL オブジェクトを共有メモリから取得する.
-	 * completionHandler の {@link AsyncResult#result()} で受け取る.
+	 * onComplete の {@link AsyncResult#result()} で受け取る.
 	 * @param vertx vertx オブジェクト
 	 * @param unitId ユニット ID
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 */
-	public static void withUnitId(Vertx vertx, String unitId, Handler<AsyncResult<List<JsonObject>>> completionHandler) {
+	public static void withUnitId(Vertx vertx, String unitId, Handler<AsyncResult<List<JsonObject>>> onComplete) {
 		if (unitId != null) {
 			all(vertx, resAll -> {
 				if (resAll.succeeded()) {
@@ -172,56 +172,56 @@ public class DealUtil {
 							result.add(aDeal);
 						}
 					}
-					completionHandler.handle(Future.succeededFuture(result));
+					onComplete.handle(Future.succeededFuture(result));
 				} else {
-					completionHandler.handle(Future.failedFuture(resAll.cause()));
+					onComplete.handle(Future.failedFuture(resAll.cause()));
 				}
 			});
 		} else {
-			ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, "DealUtil.withUnitId(); no unitId", completionHandler);
+			ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, "DealUtil.withUnitId(); no unitId", onComplete);
 		}
 	}
 
 	/**
 	 * Get the DEAL object with the ID specified by {@code dealId} from shared memory.
 	 * Raise an error if it doesn't exist.
-	 * Results are received with the {@link AsyncResult#result()} method of completionHandler.
+	 * Results are received with the {@link AsyncResult#result()} method of onComplete.
 	 * @param vertx a vertx object
 	 * @param dealId an interchange ID
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 *          
 	 * {@code dealId} で指定した ID を持つ DEAL オブジェクトを共有メモリから取得する.
 	 * 存在しなければエラーになる.
-	 * completionHandler の {@link AsyncResult#result()} で受け取る.
+	 * onComplete の {@link AsyncResult#result()} で受け取る.
 	 * @param vertx vertx オブジェクト
 	 * @param dealId 融通 ID
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 */
-	public static void get(Vertx vertx, String dealId, Handler<AsyncResult<JsonObject>> completionHandler) {
-		get(vertx, dealId, false, completionHandler);
+	public static void get(Vertx vertx, String dealId, Handler<AsyncResult<JsonObject>> onComplete) {
+		get(vertx, dealId, false, onComplete);
 	}
 	/**
 	 * Get the DEAL object with the ID specified by {@code dealId} from shared memory.
 	 * If it doesn't exist, handle according to the state of {@code ignoreNotExists}.
-	 * Results are received with the {@link AsyncResult#result()} method of completionHandler.
+	 * Results are received with the {@link AsyncResult#result()} method of onComplete.
 	 * @param vertx a vertx object
 	 * @param dealId an interchange ID
 	 * @param ignoreNotExists the action to take if an interchange with the specified {@code dealId} does not exist
 	 *        - true: Issue a warning and return {@code null}
 	 *        - false: Raise a global error
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 *          
 	 * {@code dealId} で指定した ID を持つ DEAL オブジェクトを共有メモリから取得する.
 	 * 存在しない場合は {@code ignoreNotExists} に応じて対応する.
-	 * completionHandler の {@link AsyncResult#result()} で受け取る.
+	 * onComplete の {@link AsyncResult#result()} で受け取る.
 	 * @param vertx vertx オブジェクト
 	 * @param dealId 融通 ID
 	 * @param ignoreNotExists 指定した {@code dealId} を持つものが存在しない場合の挙動
 	 *        - true : 警告を出力して {@code null} を返す
 	 *        - false : グローバルエラーにする
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 */
-	public static void get(Vertx vertx, String dealId, boolean ignoreNotExists, Handler<AsyncResult<JsonObject>> completionHandler) {
+	public static void get(Vertx vertx, String dealId, boolean ignoreNotExists, Handler<AsyncResult<JsonObject>> onComplete) {
 		if (dealId != null) {
 			EncryptedClusterWideMapUtil.<String, JsonObject>getEncryptedClusterWideMap(vertx, MAP_NAME, resMap -> {
 				if (resMap.succeeded()) {
@@ -229,26 +229,26 @@ public class DealUtil {
 						if (resGet.succeeded()) {
 							JsonObject result = resGet.result();
 							if (result != null) {
-								completionHandler.handle(Future.succeededFuture(result));
+								onComplete.handle(Future.succeededFuture(result));
 							} else {
 								String msg = "DealUtil.get(); no deal found with dealId : " + dealId;
 								if (ignoreNotExists) {
 									ErrorExceptionUtil.log(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.WARN, msg);
-									completionHandler.handle(Future.succeededFuture());
+									onComplete.handle(Future.succeededFuture());
 								} else {
-									ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, msg, completionHandler);
+									ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, msg, onComplete);
 								}
 							}
 						} else {
-							ErrorExceptionUtil.logAndFail(Error.Category.FRAMEWORK, Error.Extent.GLOBAL, Error.Level.ERROR, "Communication failed on SharedData", resGet.cause(), completionHandler);
+							ErrorExceptionUtil.logAndFail(Error.Category.FRAMEWORK, Error.Extent.GLOBAL, Error.Level.ERROR, "Communication failed on SharedData", resGet.cause(), onComplete);
 						}
 					});
 				} else {
-					ErrorExceptionUtil.logAndFail(Error.Category.FRAMEWORK, Error.Extent.GLOBAL, Error.Level.ERROR, "Communication failed on SharedData", resMap.cause(), completionHandler);
+					ErrorExceptionUtil.logAndFail(Error.Category.FRAMEWORK, Error.Extent.GLOBAL, Error.Level.ERROR, "Communication failed on SharedData", resMap.cause(), onComplete);
 				}
 			});
 		} else {
-			ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, "DealUtil.get(); no dealId", completionHandler);
+			ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, "DealUtil.get(); no dealId", onComplete);
 		}
 	}
 
@@ -257,16 +257,16 @@ public class DealUtil {
 	 * Raise an error if it doesn't exist.
 	 * @param vertx a vertx object
 	 * @param deal a DEAL object
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 *          
 	 * {@code deal} で指定する DEAL オブジェクトの内容で共有メモリを更新する.
 	 * 存在しなければエラーになる.
 	 * @param vertx vertx オブジェクト
 	 * @param deal DEAL オブジェクト
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 */
-	public static void update(Vertx vertx, JsonObject deal, Handler<AsyncResult<Void>> completionHandler) {
-		update(vertx, deal, false, completionHandler);
+	public static void update(Vertx vertx, JsonObject deal, Handler<AsyncResult<Void>> onComplete) {
+		update(vertx, deal, false, onComplete);
 	}
 	/**
 	 * Update shared memory with the contents of the DEAL object specified by {@code deal}.
@@ -276,7 +276,7 @@ public class DealUtil {
 	 * @param ignoreNotExists the action to take if the specified DEAL does not exist
 	 *        - true: Issue a warning
 	 *        - false: Raise a global error
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 *          
 	 * {@code deal} で指定する DEAL オブジェクトの内容で共有メモリを更新する.
 	 * 存在しない場合は {@code ignoreNotExists} に応じて対応する.
@@ -285,22 +285,22 @@ public class DealUtil {
 	 * @param ignoreNotExists 指定した DEAL が存在しない場合の挙動
 	 *        - true : 警告を出力する
 	 *        - false : グローバルエラーにする
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 */
-	public static void update(Vertx vertx, JsonObject deal, boolean ignoreNotExists, Handler<AsyncResult<Void>> completionHandler) {
+	public static void update(Vertx vertx, JsonObject deal, boolean ignoreNotExists, Handler<AsyncResult<Void>> onComplete) {
 		acquireExclusiveLock(vertx, resExclusiveLock -> {
 			if (resExclusiveLock.succeeded()) {
 				LocalExclusiveLock.Lock lock = resExclusiveLock.result();
 				doUpdateWithExclusiveLock_(vertx, deal, ignoreNotExists, resDoUpdateWithExclusiveLock -> {
 					lock.release();
-					completionHandler.handle(resDoUpdateWithExclusiveLock);
+					onComplete.handle(resDoUpdateWithExclusiveLock);
 				});
 			} else {
-				ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.LOCAL, Error.Level.WARN, resExclusiveLock.cause(), completionHandler);
+				ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.LOCAL, Error.Level.WARN, resExclusiveLock.cause(), onComplete);
 			}
 		});
 	}
-	private static void doUpdateWithExclusiveLock_(Vertx vertx, JsonObject deal, boolean ignoreNotExists, Handler<AsyncResult<Void>> completionHandler) {
+	private static void doUpdateWithExclusiveLock_(Vertx vertx, JsonObject deal, boolean ignoreNotExists, Handler<AsyncResult<Void>> onComplete) {
 		String dealId = Deal.dealId(deal);
 		if (dealId != null) {
 			EncryptedClusterWideMapUtil.<String, JsonObject>getEncryptedClusterWideMap(vertx, MAP_NAME, resMap -> {
@@ -314,79 +314,79 @@ public class DealUtil {
 										Boolean replaced = resReplaceIfPresent.result();
 										if (replaced) {
 											if (log.isInfoEnabled()) log.info("deal updated : " + dealId);
-											completionHandler.handle(Future.succeededFuture());
+											onComplete.handle(Future.succeededFuture());
 										} else {
 											// Replacement failed because the old value has changed
 											// old の値が変わっていたので差し替え失敗
 											String msg = "DealUtil.update(); failed to replace with dealId : " + dealId;
-											ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, msg, completionHandler);
+											ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, msg, onComplete);
 										}
 									} else {
-										ErrorExceptionUtil.logAndFail(Error.Category.FRAMEWORK, Error.Extent.GLOBAL, Error.Level.ERROR, "Communication failed on SharedData", resReplaceIfPresent.cause(), completionHandler);
+										ErrorExceptionUtil.logAndFail(Error.Category.FRAMEWORK, Error.Extent.GLOBAL, Error.Level.ERROR, "Communication failed on SharedData", resReplaceIfPresent.cause(), onComplete);
 									}
 								});
 							} else {
 								String msg = "DealUtil.update(); no deal found with dealId : " + dealId;
 								if (ignoreNotExists) {
 									ErrorExceptionUtil.log(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.WARN, msg);
-									completionHandler.handle(Future.succeededFuture());
+									onComplete.handle(Future.succeededFuture());
 								} else {
-									ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, msg, completionHandler);
+									ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, msg, onComplete);
 								}
 							}
 						} else {
-							ErrorExceptionUtil.logAndFail(Error.Category.FRAMEWORK, Error.Extent.GLOBAL, Error.Level.ERROR, "Communication failed on SharedData", resGet.cause(), completionHandler);
+							ErrorExceptionUtil.logAndFail(Error.Category.FRAMEWORK, Error.Extent.GLOBAL, Error.Level.ERROR, "Communication failed on SharedData", resGet.cause(), onComplete);
 						}
 					});
 				} else {
-					ErrorExceptionUtil.logAndFail(Error.Category.FRAMEWORK, Error.Extent.GLOBAL, Error.Level.ERROR, "Communication failed on SharedData", resMap.cause(), completionHandler);
+					ErrorExceptionUtil.logAndFail(Error.Category.FRAMEWORK, Error.Extent.GLOBAL, Error.Level.ERROR, "Communication failed on SharedData", resMap.cause(), onComplete);
 				}
 			});
 		} else {
-			ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, "DealUtil.update(); no dealId in deal : " + deal, completionHandler);
+			ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, "DealUtil.update(); no dealId in deal : " + deal, onComplete);
 		}
 	}
 
 	/**
 	 * Delete the DEAL object specified by {@code dealId} from shared memory.
 	 * Raise an error if it doesn't exist.
-	 * The deleted DEAL object is received by the {@link AsyncResult#result()} method of completionHandler.
+	 * The deleted DEAL object is received by the {@link AsyncResult#result()} method of onComplete.
 	 * @param vertx a vertx object
 	 * @param dealId an interchange ID
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 *          
 	 * {@code dealId} で指定する DEAL オブジェクトを共有メモリから削除する.
 	 * 存在しなければエラーになる.
-	 * completionHandler の {@link AsyncResult#result()} で削除した DEAL オブジェクトを受け取る.
+	 * onComplete の {@link AsyncResult#result()} で削除した DEAL オブジェクトを受け取る.
 	 * @param vertx vertx オブジェクト
 	 * @param dealId 融通 ID
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 */
-	public static void remove(Vertx vertx, String dealId, Handler<AsyncResult<JsonObject>> completionHandler) {
-		remove(vertx, dealId, false, completionHandler);
+	public static void remove(Vertx vertx, String dealId, Handler<AsyncResult<JsonObject>> onComplete) {
+		remove(vertx, dealId, false, onComplete);
 	}
 	/**
 	 * Delete the DEAL object specified by {@code dealId} from shared memory.
 	 * If it doesn't exist, handle according to the state of {@code ignoreNotExists}.
-	 * The deleted DEAL object is received by the {@link AsyncResult#result()} method of completionHandler.
+	 * The deleted DEAL object is received by the {@link AsyncResult#result()} method of onComplete.
 	 * @param vertx a vertx object
 	 * @param dealId an interchange ID
 	 * @param ignoreNotExists the action to take if an interchange with the specified {@code dealId} does not exist
 	 *        - true: Issue a warning and return {@code null}
 	 *        - false: Raise a global error
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 *          
 	 * {@code dealId} で指定する DEAL オブジェクトを共有メモリから削除する.
 	 * 存在しない場合は {@code ignoreNotExists} に応じて対応する.
-	 * completionHandler の {@link AsyncResult#result()} で削除した DEAL オブジェクトを受け取る.
+	 * onComplete の {@link AsyncResult#result()} で削除した DEAL オブジェクトを受け取る.
 	 * @param vertx vertx オブジェクト
 	 * @param dealId 融通 ID
 	 * @param ignoreNotExists 指定した {@code dealId} を持つものが存在しない場合の挙動
 	 *        - true : 警告を出力して {@code null} を返す
 	 *        - false : グローバルエラーにする
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 */
-	public static void remove(Vertx vertx, String dealId, boolean ignoreNotExists, Handler<AsyncResult<JsonObject>> completionHandler) {
+	public static void remove(Vertx vertx, String dealId, boolean ignoreNotExists, Handler<AsyncResult<JsonObject>> onComplete) {
 		if (dealId != null) {
 			EncryptedClusterWideMapUtil.<String, JsonObject>getEncryptedClusterWideMap(vertx, MAP_NAME, resMap -> {
 				if (resMap.succeeded()) {
@@ -399,34 +399,34 @@ public class DealUtil {
 										Boolean removed = resRemoveIfPresent.result();
 										if (removed) {
 											if (log.isInfoEnabled()) log.info("deal removed : " + dealId);
-											completionHandler.handle(Future.succeededFuture());
+											onComplete.handle(Future.succeededFuture());
 										} else {
 											String msg = "DealUtil.remove(); failed to remove with dealId : " + dealId;
-											ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, msg, completionHandler);
+											ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, msg, onComplete);
 										}
 									} else {
-										ErrorExceptionUtil.logAndFail(Error.Category.FRAMEWORK, Error.Extent.GLOBAL, Error.Level.ERROR, "Communication failed on SharedData", resRemoveIfPresent.cause(), completionHandler);
+										ErrorExceptionUtil.logAndFail(Error.Category.FRAMEWORK, Error.Extent.GLOBAL, Error.Level.ERROR, "Communication failed on SharedData", resRemoveIfPresent.cause(), onComplete);
 									}
 								});
 							} else {
 								String msg = "DealUtil.remove(); no deal found with dealId : " + dealId;
 								if (ignoreNotExists) {
 									ErrorExceptionUtil.log(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.WARN, msg);
-									completionHandler.handle(Future.succeededFuture());
+									onComplete.handle(Future.succeededFuture());
 								} else {
-									ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, msg, completionHandler);
+									ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, msg, onComplete);
 								}
 							}
 						} else {
-							ErrorExceptionUtil.logAndFail(Error.Category.FRAMEWORK, Error.Extent.GLOBAL, Error.Level.ERROR, "Communication failed on SharedData", resGet.cause(), completionHandler);
+							ErrorExceptionUtil.logAndFail(Error.Category.FRAMEWORK, Error.Extent.GLOBAL, Error.Level.ERROR, "Communication failed on SharedData", resGet.cause(), onComplete);
 						}
 					});
 				} else {
-					ErrorExceptionUtil.logAndFail(Error.Category.FRAMEWORK, Error.Extent.GLOBAL, Error.Level.ERROR, "Communication failed on SharedData", resMap.cause(), completionHandler);
+					ErrorExceptionUtil.logAndFail(Error.Category.FRAMEWORK, Error.Extent.GLOBAL, Error.Level.ERROR, "Communication failed on SharedData", resMap.cause(), onComplete);
 				}
 			});
 		} else {
-			ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, "DealUtil.remove(); no dealId", completionHandler);
+			ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, "DealUtil.remove(); no dealId", onComplete);
 		}
 	}
 
@@ -437,21 +437,21 @@ public class DealUtil {
 	 * @param vertx a vertx object
 	 * @param deal a DEAL object
 	 * @param dateTime the activation date and time. Uses the standard APIS program format
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 *          
 	 * {@code deal} で指定する DEAL オブジェクトを activate 済みにし共有メモリを更新する.
 	 * @param vertx vertx オブジェクト
 	 * @param deal DEAL オブジェクト
 	 * @param dateTime activate 日時. APIS プログラムの標準フォーマット
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 */
-	public static void activate(Vertx vertx, JsonObject deal, String dateTime, Handler<AsyncResult<Void>> completionHandler) {
+	public static void activate(Vertx vertx, JsonObject deal, String dateTime, Handler<AsyncResult<Void>> onComplete) {
 		if (!Deal.isActivated(deal)) {
 			deal.put("activateDateTime", dateTime);
 			if (log.isInfoEnabled()) log.info("deal activated");
-			update(vertx, deal, completionHandler);
+			update(vertx, deal, onComplete);
 		} else {
-			ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, "DealUtil.activate(); already activated : " + Deal.activateDateTime(deal), completionHandler);
+			ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, "DealUtil.activate(); already activated : " + Deal.activateDateTime(deal), onComplete);
 		}
 	}
 	/**
@@ -459,21 +459,21 @@ public class DealUtil {
 	 * @param vertx a vertx object
 	 * @param deal a DEAL object
 	 * @param dateTime the rampUp date and time. Uses the standard APIS program format
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 *          
 	 * {@code deal} で指定する DEAL オブジェクトを rampUp 済み ( master 側起動完了 ) にし共有メモリを更新する.
 	 * @param vertx vertx オブジェクト
 	 * @param deal DEAL オブジェクト
 	 * @param dateTime rampUp 日時. APIS プログラムの標準フォーマット
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 */
-	public static void rampUp(Vertx vertx, JsonObject deal, String dateTime, Handler<AsyncResult<Void>> completionHandler) {
+	public static void rampUp(Vertx vertx, JsonObject deal, String dateTime, Handler<AsyncResult<Void>> onComplete) {
 		if (!Deal.isRampedUp(deal)) {
 			deal.put("rampUpDateTime", dateTime);
 			if (log.isInfoEnabled()) log.info("deal ramped up");
-			update(vertx, deal, completionHandler);
+			update(vertx, deal, onComplete);
 		} else {
-			ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, "DealUtil.rampUp(); already ramped up : " + Deal.rampUpDateTime(deal), completionHandler);
+			ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, "DealUtil.rampUp(); already ramped up : " + Deal.rampUpDateTime(deal), onComplete);
 		}
 	}
 	/**
@@ -481,21 +481,21 @@ public class DealUtil {
 	 * @param vertx a vertx object
 	 * @param deal a DEAL object
 	 * @param dateTime the warmUp date and time. Uses the standard APIS program format
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 *          
 	 * {@code deal} で指定する DEAL オブジェクトを warmUp 済み ( slave 側起動完了 ) にし共有メモリを更新する.
 	 * @param vertx vertx オブジェクト
 	 * @param deal DEAL オブジェクト
 	 * @param dateTime warmUp 日時. APIS プログラムの標準フォーマット
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 */
-	public static void warmUp(Vertx vertx, JsonObject deal, String dateTime, Handler<AsyncResult<Void>> completionHandler) {
+	public static void warmUp(Vertx vertx, JsonObject deal, String dateTime, Handler<AsyncResult<Void>> onComplete) {
 		if (!Deal.isWarmedUp(deal)) {
 			deal.put("warmUpDateTime", dateTime);
 			if (log.isInfoEnabled()) log.info("deal warmed up");
-			update(vertx, deal, completionHandler);
+			update(vertx, deal, onComplete);
 		} else {
-			ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, "DealUtil.warmUp(); already warmed up : " + Deal.warmUpDateTime(deal), completionHandler);
+			ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, "DealUtil.warmUp(); already warmed up : " + Deal.warmUpDateTime(deal), onComplete);
 		}
 	}
 	/**
@@ -503,27 +503,27 @@ public class DealUtil {
 	 * @param vertx a vertx object
 	 * @param deal a DEAL object
 	 * @param dateTime the start date and time. Uses the standard APIS program format
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 *          
 	 * {@code deal} で指定する DEAL オブジェクトを start 済み ( 積算開始 ) にし共有メモリを更新する.
 	 * @param vertx vertx オブジェクト
 	 * @param deal DEAL オブジェクト
 	 * @param dateTime start 日時. APIS プログラムの標準フォーマット
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 */
-	public static void start(Vertx vertx, JsonObject deal, String dateTime, Handler<AsyncResult<Void>> completionHandler) {
+	public static void start(Vertx vertx, JsonObject deal, String dateTime, Handler<AsyncResult<Void>> onComplete) {
 		if (Deal.isActivated(deal)) {
 			if (!Deal.isStarted(deal)) {
 				deal.put("startDateTime", dateTime);
 				deal.put("cumulateDateTime", dateTime);
 				deal.put("cumulateAmountWh", 0);
 				if (log.isInfoEnabled()) log.info("deal started");
-				update(vertx, deal, completionHandler);
+				update(vertx, deal, onComplete);
 			} else {
-				ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, "DealUtil.start(); already started : " + Deal.startDateTime(deal), completionHandler);
+				ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, "DealUtil.start(); already started : " + Deal.startDateTime(deal), onComplete);
 			}
 		} else {
-			ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, "DealUtil.start(); not yet activated", completionHandler);
+			ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, "DealUtil.start(); not yet activated", onComplete);
 		}
 	}
 	private static final int HOUR_IN_MILLISECOND_ = 60 * 60 * 1000;
@@ -533,16 +533,16 @@ public class DealUtil {
 	 * @param deal a DEAL object
 	 * @param dateTime the addition date and time Uses the standard APIS program format
 	 * @param wb the battery power [Wh]
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 *          
 	 * {@code deal} で指定する DEAL オブジェクトに対し {@code dateTime} と {@code wb} で融通電力を積算し共有メモリを更新する.
 	 * @param vertx vertx オブジェクト
 	 * @param deal DEAL オブジェクト
 	 * @param dateTime 積算日時. APIS プログラムの標準フォーマット
 	 * @param wb バッテリ電力 [Wh]
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 */
-	public static void cumulate(Vertx vertx, JsonObject deal, String dateTime, Float wb, Handler<AsyncResult<Void>> completionHandler) {
+	public static void cumulate(Vertx vertx, JsonObject deal, String dateTime, Float wb, Handler<AsyncResult<Void>> onComplete) {
 		if (Deal.isActivated(deal)) {
 			if (Deal.isStarted(deal)) {
 				if (!Deal.isStopped(deal)) {
@@ -556,18 +556,18 @@ public class DealUtil {
 						deal.put("cumulateDateTime", dateTime);
 						deal.put("cumulateAmountWh", cumulateAmountWh);
 						if (log.isInfoEnabled()) log.info("deal cumulated : " + cumulateAmountWh + " / " + deal.getInteger("dealAmountWh"));
-						update(vertx, deal, completionHandler);
+						update(vertx, deal, onComplete);
 					} else {
-						ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, "DealUtil.cumulate(); data deficiency; wb : " + wb + ", currentDateTime : " + currentDateTime + ", lastCumulateDateTime : " + lastCumulateDateTime + ", lastCumulateAmountWh : " + lastCumulateAmountWh, completionHandler);
+						ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, "DealUtil.cumulate(); data deficiency; wb : " + wb + ", currentDateTime : " + currentDateTime + ", lastCumulateDateTime : " + lastCumulateDateTime + ", lastCumulateAmountWh : " + lastCumulateAmountWh, onComplete);
 					}
 				} else {
-					ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, "DealUtil.cumulate(); already stopped : " + Deal.stopDateTime(deal), completionHandler);
+					ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, "DealUtil.cumulate(); already stopped : " + Deal.stopDateTime(deal), onComplete);
 				}
 			} else {
-				ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, "DealUtil.cumulate(); not yet started", completionHandler);
+				ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, "DealUtil.cumulate(); not yet started", onComplete);
 			}
 		} else {
-			ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, "DealUtil.cumulate(); not yet activated", completionHandler);
+			ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, "DealUtil.cumulate(); not yet activated", onComplete);
 		}
 	}
 	/**
@@ -575,29 +575,29 @@ public class DealUtil {
 	 * @param vertx a vertx object
 	 * @param deal a DEAL object
 	 * @param dateTime the stop date and time. Uses the standard APIS program format
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 *          
 	 * {@code deal} で指定する DEAL オブジェクトを stop 済みにし共有メモリを更新する.
 	 * @param vertx vertx オブジェクト
 	 * @param deal DEAL オブジェクト
 	 * @param dateTime stop 日時. APIS プログラムの標準フォーマット
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 */
-	public static void stop(Vertx vertx, JsonObject deal, String dateTime, Handler<AsyncResult<Void>> completionHandler) {
+	public static void stop(Vertx vertx, JsonObject deal, String dateTime, Handler<AsyncResult<Void>> onComplete) {
 		if (Deal.isActivated(deal)) {
 			if (Deal.isStarted(deal)) {
 				if (!Deal.isStopped(deal)) {
 					deal.put("stopDateTime", dateTime);
 					if (log.isInfoEnabled()) log.info("deal stopped");
-					update(vertx, deal, completionHandler);
+					update(vertx, deal, onComplete);
 				} else {
-					ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, "DealUtil.stop(); already stopped : " + Deal.stopDateTime(deal), completionHandler);
+					ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, "DealUtil.stop(); already stopped : " + Deal.stopDateTime(deal), onComplete);
 				}
 			} else {
-				ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, "DealUtil.stop(); not yet started", completionHandler);
+				ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, "DealUtil.stop(); not yet started", onComplete);
 			}
 		} else {
-			ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, "DealUtil.stop(); not yet activated", completionHandler);
+			ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, "DealUtil.stop(); not yet activated", onComplete);
 		}
 	}
 	/**
@@ -605,15 +605,15 @@ public class DealUtil {
 	 * @param vertx a vertx object
 	 * @param deal a DEAL object
 	 * @param dateTime the deactivation date and time. Uses the standard APIS program format
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 *          
 	 * {@code deal} で指定する DEAL オブジェクトを deactivate 済みにし共有メモリを更新する.
 	 * @param vertx vertx オブジェクト
 	 * @param deal DEAL オブジェクト
 	 * @param dateTime deactivate 日時. APIS プログラムの標準フォーマット
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 */
-	public static void deactivate(Vertx vertx, JsonObject deal, String dateTime, Handler<AsyncResult<Void>> completionHandler) {
+	public static void deactivate(Vertx vertx, JsonObject deal, String dateTime, Handler<AsyncResult<Void>> onComplete) {
 		if (Deal.isActivated(deal)) {
 			if (!Deal.isStarted(deal) || Deal.isStopped(deal)) {
 				if (!Deal.isDeactivated(deal)) {
@@ -624,15 +624,15 @@ public class DealUtil {
 					}
 					deal.remove("isMaster");
 					if (log.isInfoEnabled()) log.info("deal deactivated");
-					update(vertx, deal, completionHandler);
+					update(vertx, deal, onComplete);
 				} else {
-					ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, "DealUtil.deactivate(); already deactivated : " + Deal.deactivateDateTime(deal), completionHandler);
+					ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, "DealUtil.deactivate(); already deactivated : " + Deal.deactivateDateTime(deal), onComplete);
 				}
 			} else {
-				ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, "DealUtil.deactivate(); started but not yet stopped : " + Deal.startDateTime(deal), completionHandler);
+				ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, "DealUtil.deactivate(); started but not yet stopped : " + Deal.startDateTime(deal), onComplete);
 			}
 		} else {
-			ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, "DealUtil.deactivate(); not yet activated", completionHandler);
+			ErrorExceptionUtil.logAndFail(Error.Category.LOGIC, Error.Extent.GLOBAL, Error.Level.ERROR, "DealUtil.deactivate(); not yet activated", onComplete);
 		}
 	}
 	/**
@@ -641,16 +641,16 @@ public class DealUtil {
 	 * @param deal a DEAL object
 	 * @param dateTime the reset date and time. Uses the standard APIS program format
 	 * @param reason the reason for resetting
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 *          
 	 * {@code deal} で指定する DEAL オブジェクトを reset 済みにし共有メモリを更新する.
 	 * @param vertx vertx オブジェクト
 	 * @param deal DEAL オブジェクト
 	 * @param dateTime reset 日時. APIS プログラムの標準フォーマット
 	 * @param reason リセット理由
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 */
-	public static void reset(Vertx vertx, JsonObject deal, String dateTime, String reason, Handler<AsyncResult<Void>> completionHandler) {
+	public static void reset(Vertx vertx, JsonObject deal, String dateTime, String reason, Handler<AsyncResult<Void>> onComplete) {
 		deal.remove("activateDateTime");
 		deal.remove("rampUpDateTime");
 		deal.remove("warmUpDateTime");
@@ -663,7 +663,7 @@ public class DealUtil {
 		reset.put("reason", reason);
 		JsonObjectUtil.add(deal, reset, "reset");
 		if (log.isInfoEnabled()) log.info("deal reset; reason : " + reason);
-		update(vertx, deal, completionHandler);
+		update(vertx, deal, onComplete);
 	}
 	/**
 	 * Put the DEAL object specified by {@code deal} into the "aborted" state and update shared memory.
@@ -671,16 +671,16 @@ public class DealUtil {
 	 * @param deal a DEAL object
 	 * @param dateTime the abortion date and time. Uses the standard APIS program format
 	 * @param reason the reason for abnormal termination
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 *          
 	 * {@code deal} で指定する DEAL オブジェクトを異常終了済みにし共有メモリを更新する.
 	 * @param vertx vertx オブジェクト
 	 * @param deal DEAL オブジェクト
 	 * @param dateTime abort 日時. APIS プログラムの標準フォーマット
 	 * @param reason 異常終了理由
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 */
-	public static void abort(Vertx vertx, JsonObject deal, String dateTime, String reason, Handler<AsyncResult<Void>> completionHandler) {
+	public static void abort(Vertx vertx, JsonObject deal, String dateTime, String reason, Handler<AsyncResult<Void>> onComplete) {
 		if (!Deal.isDeactivated(deal)) {
 			if (!Deal.isAborted(deal)) {
 				deal.put("abortDateTime", dateTime);
@@ -699,9 +699,9 @@ public class DealUtil {
 				deal.put("stopDateTime", Deal.NULL_DATE_TIME_VALUE);
 			}
 			if (log.isInfoEnabled()) log.info("deal aborted; reason : " + reason);
-			update(vertx, deal, completionHandler);
+			update(vertx, deal, onComplete);
 		} else {
-			completionHandler.handle(Future.succeededFuture());
+			onComplete.handle(Future.succeededFuture());
 		}
 	}
 	/**
@@ -710,16 +710,16 @@ public class DealUtil {
 	 * @param deal a DEAL object
 	 * @param dateTime the SCRAM date and time. Uses the standard APIS program format
 	 * @param reason the reason for the SCRAM
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 *          
 	 * {@code deal} で指定する DEAL オブジェクトを SCRAM 済みにし共有メモリを更新する.
 	 * @param vertx vertx オブジェクト
 	 * @param deal DEAL オブジェクト
 	 * @param dateTime SCRAM 日時. APIS プログラムの標準フォーマット
 	 * @param reason SCRAM 理由
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 */
-	public static void scram(Vertx vertx, JsonObject deal, String dateTime, String reason, Handler<AsyncResult<Void>> completionHandler) {
+	public static void scram(Vertx vertx, JsonObject deal, String dateTime, String reason, Handler<AsyncResult<Void>> onComplete) {
 		if (!Deal.isDeactivated(deal)) {
 			deal.put("scramDateTime", dateTime);
 			deal.put("scramReason", reason);
@@ -736,9 +736,9 @@ public class DealUtil {
 				deal.put("stopDateTime", dateTime);
 			}
 			if (log.isInfoEnabled()) log.info("deal scrammed; reason : " + reason);
-			update(vertx, deal, completionHandler);
+			update(vertx, deal, onComplete);
 		} else {
-			completionHandler.handle(Future.succeededFuture());
+			onComplete.handle(Future.succeededFuture());
 		}
 	}
 	/**
@@ -746,15 +746,15 @@ public class DealUtil {
 	 * @param vertx a vertx object
 	 * @param deal a DEAL object
 	 * @param flag true if this object is to become the Master Deal, false otherwise
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 *          
 	 * {@code deal} で指定する DEAL オブジェクトに対し Master Deal フラグを設定し共有メモリを更新する.
 	 * @param vertx vertx オブジェクト
 	 * @param deal DEAL オブジェクト
 	 * @param flag Master Deal か否か
-	 * @param completionHandler the completion handler
+	 * @param onComplete the completion handler
 	 */
-	public static void isMaster(Vertx vertx, JsonObject deal, boolean flag, Handler<AsyncResult<Void>> completionHandler) {
+	public static void isMaster(Vertx vertx, JsonObject deal, boolean flag, Handler<AsyncResult<Void>> onComplete) {
 		if (Deal.isMaster(deal) != flag) {
 			if (flag) {
 				deal.put("isMaster", flag);
@@ -762,9 +762,9 @@ public class DealUtil {
 				deal.remove("isMaster");
 			}
 			if (log.isInfoEnabled()) log.info("deal isMaster : " + flag);
-			update(vertx, deal, completionHandler);
+			update(vertx, deal, onComplete);
 		} else {
-			completionHandler.handle(Future.succeededFuture());
+			onComplete.handle(Future.succeededFuture());
 		}
 	}
 

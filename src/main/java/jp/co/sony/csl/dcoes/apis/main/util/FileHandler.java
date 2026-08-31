@@ -9,10 +9,10 @@ import jp.co.sony.csl.dcoes.apis.common.util.vertx.JsonObjectUtil;
 
 public final class FileHandler {
     private FileHandler() {
-        // prevent instantiation
     }
 
-    public static void readLocalFile(Handler<AsyncResult<JsonObject>> completionHandler, FileSystem fileSystem, String localFilePath) {
+    public static void readLocalFile(Handler<AsyncResult<JsonObject>> completionHandler, FileSystem fileSystem,
+            String localFilePath) {
         fileSystem.readFile(localFilePath, resFile -> {
             if (resFile.succeeded()) {
                 JsonObjectUtil.toJsonObject(resFile.result(), resToJsonObject -> {

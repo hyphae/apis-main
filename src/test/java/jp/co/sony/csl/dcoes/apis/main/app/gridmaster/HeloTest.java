@@ -9,20 +9,22 @@ import org.junit.Test;
 
 /**
  * GridMaster Helo test.
+ * 
  * @author OES Project
- *          
- * GridMaster Helo のテスト.
+ * 
+ *         GridMaster Helo のテスト.
  * @author OES Project
  */
 public class HeloTest extends AbstractApisTest {
 
 	/**
 	 * Supports deploy and undeploy operations.
+	 * 
 	 * @param context a testcontext object
-	 *          
-	 *  deploy と undeploy が行える.
+	 * 
+	 *                deploy と undeploy が行える.
 	 * @param context testcontext オブジェクト
-	 */	
+	 */
 	@Test
 	public void testDeployAndUnDeploy(TestContext context) {
 		vertx.deployVerticle(Helo.class.getName(), context.asyncAssertSuccess(deploymentID -> {
@@ -32,9 +34,10 @@ public class HeloTest extends AbstractApisTest {
 
 	/**
 	 * When helo is sent to GridMaster, it sends back a unitId.
+	 * 
 	 * @param context a testcontext object
-	 *          
-	 *  GridMasterに helo を送ると unitId が返ってくる. 
+	 * 
+	 *                GridMasterに helo を送ると unitId が返ってくる.
 	 * @param context testcontext オブジェクト
 	 */
 	@Test
@@ -46,12 +49,12 @@ public class HeloTest extends AbstractApisTest {
 
 		vertx.deployVerticle(Helo.class.getName(), context.asyncAssertSuccess(s -> {
 			Async async = context.async();
-			vertx.eventBus().send(ServiceAddress.GridMaster.helo(), null, r -> {
+			vertx.eventBus().request(ServiceAddress.GridMaster.helo(), null).onComplete(r -> {
 				if (r.succeeded()) {
 					context.assertNotNull(r.result().body());
 					context.assertEquals(unitId, String.valueOf(r.result().body()), "返信された値が、期待されたunitIdでない");
-					                 	// Test completed normally
-					async.complete();	// テスト正常終了
+					// Test completed normally
+					async.complete(); // テスト正常終了
 				} else {
 					context.fail("送信に失敗");
 				}

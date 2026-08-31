@@ -1,65 +1,53 @@
 {
-	"#" : "start vertx or fat jar with option '-conf path/to/config_file.json'",
-
-	"programId" : "apis-main",
-
-	"communityId" : "oss_community",
-	"clusterId" : "oss_cluster",
-
-	"security" : {
-		"enabled" : true,
-		"pemKeyFile" : "./key.pem",
-		"pemCertFile" : "./cert.pem"
+	"#": "start vertx or fat jar with option '-conf path/to/config_file.json'",
+	"programId": "apis-main",
+	"communityId": "oss_community",
+	"clusterId": "oss_cluster",
+	"security": {
+		"enabled": true,
+		"pemKeyFile": "./key.pem",
+		"pemCertFile": "./cert.pem"
 	},
-
-	"unitId" : "E001",
-	"unitName" : "E001",
-	"serialNumber" : "1",
-
-	"systemType" : "dcdc_emulator",
-
-	"hwConfigFile" : "./hwConfig.json",
-	"policyFile" : "./policy.json",
-	"scenarioFile" : "./scenario.json",
-	"stateFileFormat" : "{tmpdir}/apis/state/%s",
-	"dealLogDirFormat" : "'{tmpdir}/apis/dealLog/'uuuu'/'MM'/'dd",
-	"fileSystemExclusiveLockFileFormat" : "{tmpdir}/.apis.%s.lock",
-
-	"policyFileReadTimeoutMsec" : 60000,
-
-	"connection" : {
-		"emulator" : {
-			"host" : "localhost",
-			"port" : 4390
+	"unitId": "E001",
+	"unitName": "E001",
+	"serialNumber": "1",
+	"systemType": "dcdc_emulator",
+	"hwConfigFile": "./hwConfig.json",
+	"policyFile": "./policy.json",
+	"scenarioFile": "./scenario.json",
+	"stateFileFormat": "{tmpdir}/apis/state/%s",
+	"dealLogDirFormat": "'{tmpdir}/apis/dealLog/'uuuu'/'MM'/'dd",
+	"fileSystemExclusiveLockFileFormat": "{tmpdir}/.apis.%s.lock",
+	"policyFileReadTimeoutMsec": 60000,
+	"connection": {
+		"emulator": {
+			"host": "localhost",
+			"port": 43900
 		},
-		"dcdc_controller" : {
-			"host" : "localhost",
-			"port" : 4380
+		"dcdc_controller": {
+			"host": "localhost",
+			"port": 43830
 		},
-		"emu_driver" : {
-			"host" : "localhost",
-			"port" : 8080
+		"emu_driver": {
+			"host": "localhost",
+			"port": 8080
 		}
 	},
-
-	"controlCenter" : {
-		"enabled" : true,
-		"account" : "e001",
-		"password" : "e001"
+	"controlCenter": {
+		"enabled": true,
+		"account": "e001",
+		"password": "e001"
 	},
-
-	"watchdog" : {
-		"enabled" : false,
-		"periodMsec" : 5000,
-		"host" : "localhost",
-		"port" : 12345,
-		"uri" : "/restart",
-		"requestTimeoutMsec" : 5000
+	"watchdog": {
+		"enabled": false,
+		"periodMsec": 5000,
+		"host": "localhost",
+		"port": 12345,
+		"uri": "/restart",
+		"requestTimeoutMsec": 5000
 	},
-
-	"batteryCapacityManagement" : {
-		"enabled" : false
+	"batteryCapacityManagement": {
+		"enabled": false
 	},
-
-	"#" : "end"
+	"#": "end"
 }
